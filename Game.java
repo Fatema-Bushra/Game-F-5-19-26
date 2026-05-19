@@ -1,14 +1,18 @@
 /**
  * Game Class - Primary game logic for a Java-based Processing Game
  * @author Joel A Bianchi
- * @version 6/12/25
- * No need to create PImage for bg
+ * @version 5/19/26
+ * Revised structure to accomodate Docker webapp development
  */
 
 //import processing.sound.*;
+import java.io.InputStream;
+
 import processing.core.PApplet;
 import processing.core.PConstants;
+import processing.core.PFont;
 import processing.core.PImage;
+import processing.data.JSONObject;
 
 
 public class Game extends PApplet{
@@ -17,6 +21,8 @@ public class Game extends PApplet{
 
   // VARIABLES: Processing variable to do Processing things
   PApplet p;
+  public static final int APP_WIDTH = 800;
+  public static final int APP_HEIGHT = 600;
 
   // VARIABLES: Title Bar
   String titleText = "PEANUT CHESS SKY HORSE 2";
@@ -77,38 +83,38 @@ public class Game extends PApplet{
   // Processing method that runs once for screen resolution settings
   public void settings() {
     //SETUP: Match the screen size to the background image size
-    size(800,600);  //these will automatically be saved as width & height
-
+    size(APP_WIDTH, APP_HEIGHT, JAVA2D);  //request app size from Processing here
     // Allows p variable to be used by other classes to access PApplet methods
     p = this;
     
   }
 
-  //Required Processing method that gets run once
+
+  // Required Processing method that gets run once
+  // Place to put constructors, references, settings
   public void setup() {
 
     //SETUP: Set the title on the title bar
-    surface.setTitle(titleText);
+    if (surface != null) {
+      surface.setTitle("Peanut Chess Sky Horse 2"); 
+    }
     p.imageMode(PConstants.CORNER);    //Set Images to read coordinates at corners
+    this.width = APP_WIDTH;
+    this.height = APP_HEIGHT;
+    p.pixelWidth = APP_WIDTH;
+    p.pixelHeight = APP_HEIGHT;
 
-    //SETUP: Construct each Screen, World, Grid
-    splashScreen = new Screen(p, "splash", splashBgFile);
-    grid1 = new Grid(p, "chessBoard", grid1BgFile, 6, 8);
-    skyWorld = new World(p, "sky", skyWorldBgFile, 4.0f, 0.0f, -800.0f); //moveable World constructor
-    brickWorld = new World(p,"platformer", brickWorldBgFile);
-    endScreen = new World(p, "end", endBgFile);
-    currentScreen = splashScreen;
-
+    
     //SETUP: Construct Game objects used in All Screens
     runningHorse = new AnimatedSprite(p, "sprites/horse_run.png", "sprites/horse_run.json", 50.0f, 75.0f, 1.0f);
 
-    //SETUP: Setup more grid1 objects
-    piece1 = p.loadImage(piece1File);
-    piece1.resize(grid1.getTileWidth(),grid1.getTileHeight());
+    //SETUP: Construct Splash Screen + objects
+    splashScreen = new Screen(p, "splash", splashBgFile);
+
+    //SETUP: Construct grid1 Screen + objects
+    grid1 = new Grid(p, "chessBoard", grid1BgFile, 6, 8);
     chick = new AnimatedSprite(p, chickFile, chickJson, 0.0f, 0.0f, 0.5f);
-    grid1.setTileSprite(new GridLocation (chickRow, chickCol), chick);
     b1 = new Button(p, "rect", 625, 525, 150, 50, "GoTo Level 2");
-    grid1.addSprite(b1);
     // b1.setFontStyle("fonts/spidermanFont.ttf");
     b1.setFontStyle("Calibri");
     b1.setTextColor(PColor.WHITE);
@@ -125,33 +131,84 @@ public class Game extends PApplet{
     };
     grid1.setAllMarks(tileMarks);
     grid1.startPrintingGridMarks();
-    System.out.println("Done loading Level 1 (grid1)...");
+    System.out.println("Finished setup for grid1...");
     
-    //SETUP: Setup more skyWorld objects
+    //SETUP: Setup skyWorld constructor and objects
+    skyWorld = new World(p, "sky", skyWorldBgFile, 4.0f, 0.0f, -600.0f); //moveable World constructor
     zapdos = new Sprite(p, zapdosFile, 0.25f);
-    zapdos.moveTo(zapdosStartX, zapdosStartY);
     skyWorld.addSprite(zapdos);
     skyWorld.addSpriteCopyTo(runningHorse, 100, 200);  //example Sprite added to a World at a location, with a speed
     skyWorld.printWorldSprites();
-    System.out.println("Done loading Level 2 (skyWorld)...");
+    System.out.println("Finieshed setup for skyWorld...");
 
-    // SETUP: Setup more brickWorld objects
+    // SETUP: Setup brickWorld constructor + objects
+    brickWorld = new World(p,"platformer", brickWorldBgFile);
     plat = new Platform(p, PColor.MAGENTA, 500.0f, 100.0f, 200.0f, 20.0f);
     plat.setOutlineColor(PColor.BLACK);
     // plat.startGravity(5.0f); //sets gravity to a rate of 5.0
     brickWorld.addSprite(plat);    
-    System.out.println("Done loading Level 3 (brickWorld)...");
+    System.out.println("Finished setup for brickWorld...");
 
+    //SETUP: Setup endScreen constructor + objects
+    endScreen = new World(p, "end", endBgFile);
+
+    //SETUP: Set the starting screen for the game
+    currentScreen = splashScreen;
 
     //SETUP: Sound
-    // Load a soundfile from the sounds folder of the sketch and play it back
-     //song = new SoundFile(p, "sounds/Lenny_Kravitz_Fly_Away.mp3");
-     //song.play();
+      // Load a soundfile from the sounds folder of the sketch and play it back
+      // song = new SoundFile(p, "sounds/Lenny_Kravitz_Fly_Away.mp3");
+      // song.play();
+
+     // Trigger the new initialization phase
+     System.out.println("Initial Rendering of Game...");
+     initialRender(); 
     
     System.out.println("Game started...");
 
   } //end setup()
 
+
+  // Method that starts drawing items on the screen
+  // Safe place to load and resize images
+  public void initialRender() {
+
+    //RENDER: All Screen Objects
+    runningHorse.initialRender();
+
+    //RENDER: splash objects
+    splashScreen.initialRender();
+    
+    //RENDER: grid1 objects
+    grid1.initialRender();
+    chick.initialRender();
+    grid1.setTileSprite(new GridLocation (chickRow, chickCol), chick);
+    grid1.addSprite(b1);
+    piece1 = Resource.loadImage(piece1File);
+    piece1.resize(grid1.getTileWidth(),grid1.getTileHeight());
+    System.out.println("Done intial render of grid1...");
+
+    //RENDER: skyWorld objects
+    skyWorld.initialRender();
+    zapdos.initialRender();
+    zapdos.moveTo(zapdosStartX, zapdosStartY);
+    // skyWorld.addSprite(zapdos);
+    // skyWorld.addSpriteCopyTo(runningHorse, 100, 200);  //example Sprite added to a World at a location, with a speed
+    // skyWorld.printWorldSprites();
+    System.out.println("Done intial render of skyWorld...");
+
+
+    //RENDER: brickWorld objects
+    brickWorld.initialRender();
+    plat.setOutlineColor(PColor.BLACK);
+    // plat.startGravity(5.0f); //sets gravity to a rate of 5.0
+    brickWorld.addSprite(plat);    
+    System.out.println("Done loading Level 3 (brickWorld)...");
+
+    //RENDER: end objects
+    endScreen.initialRender();
+
+  }
 
   //Required Processing method that automatically loops
   //(Anything drawn on the screen should be called from here)
@@ -284,8 +341,9 @@ public class Game extends PApplet{
       extraText = currentScreen.getName();
 
       //set the title each loop
-      surface.setTitle(titleText + "\t// CurrentScreen: " + extraText + " \t // Name: " + name + "\t // Health: " + health );
-
+      if (surface != null) {
+        surface.setTitle(titleText + "\t// CurrentScreen: " + extraText + " \t // Name: " + name + "\t // Health: " + health );
+      }
       //adjust the extra text as desired
     
     }
@@ -315,7 +373,7 @@ public class Game extends PApplet{
       // Print a '1' in console when level1
       System.out.print("1");
 
-      // Displays the piece1 image
+      // Displays the piece1 image at a new row or column
       GridLocation piece1Loc = new GridLocation(piece1Row,piece1Col);
       grid1.setTileImage(piece1Loc, piece1);
 

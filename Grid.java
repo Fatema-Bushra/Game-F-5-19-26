@@ -7,9 +7,8 @@ import processing.core.PImage;
  * Subclass of World that can show all Images & Sprites
  * @author Joel A Bianchi
  * @author RJ Morel
- * @version 6/12/25
- * All Grids take in files, create & resize background PImages
- * Added copyTileSprite() & moveTileSprite() to help with populating & moving Sprites through the Grid
+ * @version 5/19/26
+ * Added initialRender method
  */
 public class Grid extends World{
   
@@ -447,7 +446,7 @@ public class Grid extends World{
     sprite.setCenterX(getCenterX(loc));
     sprite.setCenterY(getCenterY(loc));
     tile.setSprite(sprite);
-    showTileSprite(loc);
+    // showTileSprite(loc);
     //System.out.println("Succcessfully set tile @ " + loc);
   }
   

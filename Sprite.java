@@ -7,9 +7,8 @@ import processing.core.PImage;
  * Note: Picture coordinate origina at top, left corner
  * @author Joel A Bianchi
  * @author Marcus Bistline
- * @version 6/12/25
- * resize() updated for pixels (float)
- * scale() added
+ * @version 5/19/26
+ * Added initialRender method
  */
 public class Sprite{
 
@@ -34,6 +33,7 @@ public class Sprite{
   private float defaultGravity = 20.0f;
   private float gravityStrength = defaultGravity;
   private float defaultJumpSpeed = 12.0f;
+  private float scaleFactor = 1.0f;
 
 
   //------------------ SPRITE CONSTRUCTORS --------------------//
@@ -51,53 +51,44 @@ public class Sprite{
    * Sprite Constructor #2: Only pass in the image file that can be scaled (Non-animated)
    * @param p             Processing applet
    * @param spriteImgFile filename for the non-animated sprite
-   * @param scale         float that multiplies the size of the image to display
+   * @param scaleFactor         float that multiplies the size of the image to display
    */
-  public Sprite(PApplet p, String spriteImgFile, float scale){
-    this(p, spriteImgFile, scale, 0.0f, 0.0f, false);
+  public Sprite(PApplet p, String spriteImgFile, float scaleFactor){
+    this(p, spriteImgFile, scaleFactor, 0.0f, 0.0f, false);
   }
 
   /**
    * Sprite Constructor #3: for Non-Animated Sprite (not working)
    * @param p             Processing applet
    * @param spriteImgFile filename for the non-animated sprite
-   * @param scale         float that multiplies the size of the image to display
+   * @param scaleFactor         float that multiplies the size of the image to display
    * @param x             sets the initial LEFT edge of the Sprite
    * @param y             sets the initial TOP edge of the Sprite
    */
-  public Sprite(PApplet p, String spriteImgFile, float scale, float x, float y) {
-    this(p, spriteImgFile, scale, x, y, false);
+  public Sprite(PApplet p, String spriteImgFile, float scaleFactor, float x, float y) {
+    this(p, spriteImgFile, scaleFactor, x, y, false);
   }
 
   /**
    * Sprite Constructor #4: for ANY Sprite from a file name
    * @param p             Processing applet
    * @param spriteImgFile filename for the non-animated sprite
-   * @param scale         float that multiplies the size of the image to display
+   * @param scaleFactor         float that multiplies the size of the image to display
    * @param x             sets the initial LEFT edge of the Sprite
    * @param y             sets the initial TOP edge of the Sprite
    * @param isAnimated    true if animated, false otherwise
    */
-  public Sprite(PApplet p, String spriteImgFile, float scale, float x, float y, boolean isAnimated) {
+  public Sprite(PApplet p, String spriteImgFile, float scaleFactor, float x, float y, boolean isAnimated) {
 
     System.out.println("Sprite: Loading new Sprite " + spriteImgFile + " which is animated? " + isAnimated);
     this.p = p;
     this.spriteImgFile = spriteImgFile;
-
-    if(!isAnimated){
-      if( spriteImgFile != null){
-        this.spriteImg = p.loadImage(spriteImgFile);
-        scale(scale);
-      } else {
-
-      }
-    }
-
+    this.scaleFactor = scaleFactor;
     setLeft(x);
     setTop(y);
+    this.isAnimated = isAnimated;
     this.speedX = 0;
     this.speedY = 0;
-    this.isAnimated = isAnimated;
     this.isSolid = true;
     // System.out.println("---->Sprite Class: "+ Game.toStringPImage(spriteImg));
   }
@@ -106,24 +97,25 @@ public class Sprite{
    * Sprite Constructor #5: Input a PImage directly, Used for moveable Sprites
    * @param p             Processing applet
    * @param spriteImg     pre-loaded PImage for Sprite
-   * @param scale         float that multiplies the size of the image to display
+   * @param scaleFactor         float that multiplies the size of the image to display
    * @param x             sets the initial LEFT edge of the Sprite
    * @param y             sets the initial TOP edge of the Sprite
    */
-  public Sprite(PApplet p, PImage spriteImg, float scale, float x, float y) {
+  public Sprite(PApplet p, PImage spriteImg, float scaleFactor, float x, float y) {
 
     System.out.println("Sprite: Loading new moveable Sprite!");
     this.p = p;
     this.spriteImg = spriteImg;
-    this.w = spriteImg.width * scale;
-    this.h = spriteImg.height * scale;
+    this.scaleFactor = scaleFactor;
     setLeft(x);
     setTop(y);
-    resize(w,h);
     this.speedX = 0;
     this.speedY = 0;
     this.isAnimated = false;
     this.isSolid = true;
+
+
+
   }
 
   /**
@@ -149,6 +141,16 @@ public class Sprite{
     this.isSolid = true;
     this.color = color;
     System.out.println("done loading Sprite: " + this);
+  }
+
+  public void initialRender(){
+    
+    if(!isAnimated){
+      if( spriteImgFile != null){
+        this.spriteImg = Resource.loadImage(spriteImgFile);
+        scale(scaleFactor);
+      } 
+    }
   }
 
 
@@ -734,11 +736,11 @@ public class Sprite{
   /** 
    * Scales Sprite to be bigger (with values > 1.0f)
    * and smaller (with values < 1.0f)
-   * @param scale       number to multiple height & width of image by
+   * @param scaleFactor       number to multiple height & width of image by
    */
-  public void scale(float scale){
-    w = spriteImg.width * scale;
-    h = spriteImg.height * scale;
+  public void scale(float scaleFactor){
+    w = spriteImg.width * scaleFactor;
+    h = spriteImg.height * scaleFactor;
   }
   
   /** 

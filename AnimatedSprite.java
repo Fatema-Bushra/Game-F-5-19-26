@@ -12,19 +12,21 @@ import java.util.ArrayList;
  * @author Joel Bianchi
  * @author Aiden Sing
  * @author Tahlei Richardson
- * @version 6/12/25
- * Ability to resize animatedSprites
+ * @version 5/19/26
+ * Added initialRender() method
  */
 public class AnimatedSprite extends Sprite{
 
   private String pngFile;
   private String jsonFile;
   private ArrayList<PImage> animation;
-  private int len;
+  private int len = 1;
   float iBucket;
   float aSpeed; //variable to track how quickly the animation images cycle
   JSONObject spriteData;
   PImage spriteSheet;
+  float x;
+  float y;
 
   /**
    * Constructor #1 for AnimatedSprite with Spritesheet (Must use the TexturePacker to make the JSON)
@@ -40,11 +42,8 @@ public class AnimatedSprite extends Sprite{
     
     this.jsonFile = json;
     this.pngFile = png;
-    this.animation = convertPngToList(png);
-    super.setW(this.animation.get(0).width);
-    super.setH(this.animation.get(0).height);
-    super.setLeft(x);
-    super.setTop(y);
+    this.x = x;
+    this.y = y;
     this.aSpeed = aSpeed;
     //System.out.println("AS w: " + super.getW() + ",h: " + super.getH());
 
@@ -70,6 +69,19 @@ public class AnimatedSprite extends Sprite{
    */
   public AnimatedSprite(PApplet p, String png, String json) {
     this(p, png, json, 0.0f, 0.0f, 1.0f);
+  }
+
+
+  public void initialRender(){
+
+    //super.initialRender();
+
+    this.animation = convertPngToList(pngFile);
+    super.setW(this.animation.get(0).width);
+    super.setH(this.animation.get(0).height);
+    super.setLeft(x);
+    super.setTop(y);
+
   }
 
   /**
@@ -219,8 +231,9 @@ public class AnimatedSprite extends Sprite{
    * @return AnimatedSprite     new copy of this AnimatedSprite
    */
   public AnimatedSprite copySprite(){
-    //super.copy();
-    return new AnimatedSprite(p, this.pngFile, this.jsonFile, super.getLeft(), super.getTop(), this.aSpeed);
+    AnimatedSprite copy  = new AnimatedSprite(p, this.pngFile, this.jsonFile, super.getLeft(), super.getTop(), this.aSpeed);
+    copy.initialRender();
+    return copy;
   }
   
   /** 
@@ -230,8 +243,10 @@ public class AnimatedSprite extends Sprite{
    * @return AnimatedSprite   new copy of this AnimatedSprite
    */
   public AnimatedSprite copyTo(float x, float y){
-    //super.copy();
-    return new AnimatedSprite(p, this.pngFile, this.jsonFile, x, y, this.aSpeed);
+    AnimatedSprite copy = new AnimatedSprite(p, this.pngFile, this.jsonFile, x, y, this.aSpeed);
+    copy.initialRender();
+    return copy;
+  
   }
 
   /** 
@@ -242,8 +257,9 @@ public class AnimatedSprite extends Sprite{
    * @return AnimatedSprite   new copy of this AnimatedSprite
    */
   public AnimatedSprite copyTo(float x, float y, float aSpeed){
-    //super.copy();
-    return new AnimatedSprite(p, this.pngFile, this.jsonFile, x, y, aSpeed);
+    AnimatedSprite copy = new AnimatedSprite(p, this.pngFile, this.jsonFile, x, y, aSpeed);
+    copy.initialRender();
+    return copy;
   }
   
 
@@ -280,8 +296,8 @@ public class AnimatedSprite extends Sprite{
   private ArrayList<PImage> convertPngToList(String png){
 
       ArrayList<PImage> ani = new ArrayList<PImage>();
-      spriteData = p.loadJSONObject(jsonFile);
-      spriteSheet = p.loadImage(png);
+      spriteData = Resource.loadJSONObject(p, jsonFile);
+      spriteSheet = Resource.loadImage(png);
       JSONArray frames = spriteData.getJSONArray("frames");
       
       // System.out.println("Loading Animated Sprite... " + pngFile);

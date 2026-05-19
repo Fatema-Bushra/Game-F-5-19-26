@@ -6,8 +6,8 @@ import processing.core.PImage;
  * Has a World Subclass
  * @author Joel A Bianchi
  * @author Carey Jiang
- * @version 6/12/25
- * All Screens take in files, create & resize background PImages
+ * @version 5/19/26
+ * Added initialRender() method
  */
 public class Screen{
 
@@ -17,10 +17,14 @@ public class Screen{
     private String screenName;
     private String bgFile;
     private PImage bgImg;
-    private boolean isMoveable;
+    private String mbgFile;
     private Sprite mbg;
+    private boolean isMoveable;
     private long startTime;
     private long lastTime = 0;
+    private float scale;
+    private float x;
+    private float y;
 
     //------------------ SCREEN CONSTRUCTORS --------------------//
 
@@ -35,15 +39,6 @@ public class Screen{
         this.isMoveable = false;
         this.setName(screenName);
         this.bgFile = bgFile;
-
-        if(bgFile != null) {
-            bgImg = p.loadImage(bgFile);
-            bgImg.resize(p.width, p.height);
-            this.setBgImg(bgImg);
-            System.out.println("bg of " + screenName + " Screen: " + Util.toStringPImage(bgImg));
-        }
-        startTime = getTotalTime(); //?
-
     }
 
     /**
@@ -59,7 +54,10 @@ public class Screen{
         this.p = p;
         this.isMoveable = true;
         this.setName(screenName);
-        mbg = new Sprite(p, movingBgFile, scale, x, y);
+        this.mbgFile = movingBgFile;
+        this.scale = scale;
+        this.x = x;
+        this.y = y;
         startTime = getTotalTime();
     }
 
@@ -81,6 +79,21 @@ public class Screen{
     //     System.out.println("Screen constructed with " + mbg.getImagePath() + "\t" + mbg);
     //     startTime = getTotalTime();
     // }
+
+    public void initialRender(){
+
+        if(bgFile != null) {
+            bgImg = Resource.loadImage(bgFile);
+            bgImg.resize(Game.APP_WIDTH, Game.APP_HEIGHT);
+            this.setBgImg(bgImg);
+            System.out.println("bg of " + screenName + " Screen: " + Util.toStringPImage(bgImg));
+        } else if (mbgFile != null){
+            mbg = new Sprite(p, mbgFile, scale, x, y);
+            mbg.initialRender();
+        }
+        startTime = getTotalTime(); //?
+
+    }
 
 
     //------------------ ACCESSORS & MUTATORS --------------------//
@@ -184,7 +197,7 @@ public class Screen{
      * Updates any movement of the background to be shown
      */
     public void showBg(){
-        if(isMoveable){
+        if(mbg != null && isMoveable){
             mbg.show();
         } else if(bgImg != null){
             p.background(bgImg);
@@ -205,7 +218,7 @@ public class Screen{
      * @return float        distance to right edge for a moveable background
      */
     public float distToRightEdge(){
-        return (mbg.getW() - p.width) + (mbg.getLeft());
+        return (mbg.getW() - Game.APP_WIDTH) + (mbg.getLeft());
     }
 
 

@@ -9,8 +9,8 @@ import processing.core.PImage;
  * @author Nathan Santos
  * @author Clive Sherwood
  * @author Vanessa Balbuena
- * @version 6/12/25
- * All Worlds take in files, create & resize background PImages
+ * @version 5/19/26
+ * Added initialRender() method
  */
 public class World extends Screen{
 
@@ -78,6 +78,13 @@ public class World extends Screen{
   //   System.out.println("World " + screenName + " constructed with " + Util.toStringPImage(movingBg));
   // }
 
+
+  public void intialRender(){
+    super.initialRender();
+
+
+    
+  }
 
   //------------------ WORLD SPRITE METHODS --------------------//
   
@@ -193,9 +200,10 @@ public class World extends Screen{
     for(Sprite sprite : sprites){
       if(sprite.getIsAnimated()){
         AnimatedSprite aSprite = (AnimatedSprite) sprite;
+        System.out.println("aSprite: " + aSprite.getJsonFile() + "\t" + aSprite.iBucket + "\t" + aSprite.aSpeed);
+        System.out.println(aSprite.getCenterX() + "," + aSprite.getCenterY());
         aSprite.animate();
-        //System.out.println("aSprite: " + aSprite.getJsonFile() + "\t" + aSprite.iBucket + "\t" + aSprite.aSpeed);
-        //System.out.println(aSprite.getCenterX() + "," + aSprite.getCenterY());
+
       } else{
         sprite.show();
       }
