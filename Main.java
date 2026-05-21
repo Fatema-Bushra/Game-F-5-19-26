@@ -14,6 +14,8 @@ public class Main extends JPanel {
 
   private static Game gameApp;
   private Timer gameLoopTimer;
+  public static final int APP_WIDTH = 800;
+  public static final int APP_HEIGHT = 600;
 
   public Main() {
     
@@ -27,10 +29,10 @@ public class Main extends JPanel {
 
       // Instance Initialization Block runs immediately after the constructor
       {
-        this.width = Game.APP_WIDTH;
-        this.height = Game.APP_HEIGHT;
-        this.p = this;     
-        this.g = this.makeGraphics(Game.APP_WIDTH, Game.APP_HEIGHT, PApplet.JAVA2D, null, true);
+        this.width = Main.APP_WIDTH;
+        this.height = Main.APP_HEIGHT;
+        // this.p = this;     
+        this.g = this.makeGraphics(Main.APP_WIDTH, Main.APP_HEIGHT, PApplet.JAVA2D, null, true);
       }
     };
 
