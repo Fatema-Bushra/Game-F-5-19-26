@@ -1,18 +1,14 @@
 /**
  * Game Class - Primary game logic for a Java-based Processing Game
- * @author Joel A Bianchi
+ * @author Fatema Bushra
  * @version 5/19/26
  * Revised structure to accomodate Docker webapp development
  */
 
 //import processing.sound.*;
-import java.io.InputStream;
-
 import processing.core.PApplet;
 import processing.core.PConstants;
-import processing.core.PFont;
 import processing.core.PImage;
-import processing.data.JSONObject;
 
 
 public class Game extends PApplet{
@@ -25,8 +21,8 @@ public class Game extends PApplet{
   public static final int APP_HEIGHT = 600;
 
   // VARIABLES: Title Bar
-  String titleText = "PEANUT CHESS SKY HORSE 2";
-  String extraText = "CurrentLevel?";
+  String titleText = "BlackJack";
+  String extraText = "One of many games in the Back-Alley Casino";
   String name = "Undefined";
 
   // VARIABLES: Whole Game
