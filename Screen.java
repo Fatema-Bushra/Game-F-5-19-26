@@ -84,7 +84,7 @@ public class Screen{
 
         if(bgFile != null) {
             bgImg = Resource.loadImage(bgFile);
-            bgImg.resize(Game.APP_WIDTH, Game.APP_HEIGHT);
+            bgImg.resize(Main.APP_WIDTH, Main.APP_HEIGHT);
             this.setBgImg(bgImg);
             System.out.println("bg of " + screenName + " Screen: " + Util.toStringPImage(bgImg));
         } else if (mbgFile != null){
@@ -218,7 +218,7 @@ public class Screen{
      * @return float        distance to right edge for a moveable background
      */
     public float distToRightEdge(){
-        return (mbg.getW() - Game.APP_WIDTH) + (mbg.getLeft());
+        return (mbg.getW() - Main.APP_WIDTH) + (mbg.getLeft());
     }
 
 
