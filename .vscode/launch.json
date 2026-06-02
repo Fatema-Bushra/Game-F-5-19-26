@@ -18,6 +18,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "java",
+            "name": "Blackjack",
+            "request": "launch",
+            "mainClass": "Blackjack",
+            "projectName": "Game-F-5-19-26_8542188d"
+        },
+        {
             "name": "Play Game",
             "type": "java",
             "request": "launch",
