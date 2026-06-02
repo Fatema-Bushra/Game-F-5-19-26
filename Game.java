@@ -26,7 +26,7 @@ public class Game extends PApplet{
   String name = "Undefined";
   // VARIABLES: Blackjack World
   World blackjackWorld;
-  String blackjackBgFile = "images/green_felt.png"; 
+  String blackjackBgFile = "images/Blackjack.jpg"; 
   Sprite deckSprite;
 
   // VARIABLES: Blackjack Game Logic
@@ -39,8 +39,8 @@ public class Game extends PApplet{
   AnimatedSprite runningHorse;
   boolean doAnimation;
 
-  // VARIABLES: splashScreen
-  Screen splashScreen;
+  */ // VARIABLES: splashScreen
+ /* Screen splashScreen;
   String splashBgFile = "images/apcsa.png";
   //SoundFile song;
 
@@ -75,7 +75,7 @@ public class Game extends PApplet{
   // VARIABLES: endScreen
   World endScreen;
   String endBgFile = "images/youwin.png";
-
+*/
 
   // VARIABLES: Tracking the current Screen being displayed
   Screen currentScreen;
