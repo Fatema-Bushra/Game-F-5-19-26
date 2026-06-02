@@ -39,14 +39,14 @@ public class Game extends PApplet{
   AnimatedSprite runningHorse;
   boolean doAnimation;
 
-  */ // VARIABLES: splashScreen
- /* Screen splashScreen;
+   // VARIABLES: splashScreen
+  Screen splashScreen;
   String splashBgFile = "images/apcsa.png";
   //SoundFile song;
 
   // VARIABLES: grid1 Screen (pieces on a grid pattern)
   Grid grid1;
-  String grid1BgFile = "images/chess.jpg";
+  String grid1BgFile = "images/Blackjack.jpg";
   PImage piece1;   // Use PImage to display the image in a GridLocation
   String piece1File = "images/x_wood.png";
   int piece1Row = 3;
@@ -75,7 +75,7 @@ public class Game extends PApplet{
   // VARIABLES: endScreen
   World endScreen;
   String endBgFile = "images/youwin.png";
-*/
+
 
   // VARIABLES: Tracking the current Screen being displayed
   Screen currentScreen;
@@ -101,7 +101,7 @@ public class Game extends PApplet{
 
     // SETUP: Construct Visual World
     blackjackWorld = new World(p, "Blackjack Table", blackjackBgFile);
-    deckSprite = new Sprite("images/deck_back.png", 650.0f, 300.0f); // Placed on the right side
+    deckSprite = new Sprite(p, "images/deck.jpg", 650.0f, 300.0f); // Placed on the right side)
     
     // Optional: Make this the starting screen
     currentScreen = blackjackWorld;
@@ -111,6 +111,7 @@ public class Game extends PApplet{
 
   // Required Processing method that gets run once
   // Place to put constructors, references, settings
+  @Override
   public void setup() {
 
     //SETUP: Set the title on the title bar
@@ -128,12 +129,12 @@ public class Game extends PApplet{
     runningHorse = new AnimatedSprite(p, "sprites/horse_run.png", "sprites/horse_run.json", 50.0f, 75.0f, 1.0f);
 
     //SETUP: Construct Splash Screen + objects
-    splashScreen = new Screen(p, "splash", splashBgFile);
+    splashScreen = new Screen(p, "splash", blackjackBgFile);
 
     //SETUP: Construct grid1 Screen + objects
-    grid1 = new Grid(p, "chessBoard", grid1BgFile, 6, 8);
-    chick = new AnimatedSprite(p, chickFile, chickJson, 0.0f, 0.0f, 0.5f);
-    b1 = new Button(p, "rect", 625, 525, 150, 50, "GoTo Level 2");
+    grid1 = new Grid(p, "Blackjack Board", grid1BgFile, 6, 8);
+    //chick = new AnimatedSprite(p, chickFile, chickJson, 0.0f, 0.0f, 0.5f);
+    //b1 = new Button(p, "rect", 625, 525, 150, 50, "GoTo Level 2");
     // b1.setFontStyle("fonts/spidermanFont.ttf");
     b1.setFontStyle("Calibri");
     b1.setTextColor(PColor.WHITE);
@@ -153,8 +154,8 @@ public class Game extends PApplet{
     System.out.println("Finished setup for grid1...");
     
     //SETUP: Setup skyWorld constructor and objects
-    skyWorld = new World(p, "sky", skyWorldBgFile, 4.0f, 0.0f, -600.0f); //moveable World constructor
-    zapdos = new Sprite(p, zapdosFile, 0.25f);
+    /*skyWorld = new World(p, "sky", skyWorldBgFile, 4.0f, 0.0f, -600.0f); //moveable World constructor
+    zapdos = new Sprite(p, zapdosFile, 0.25f, 300.0F);
     skyWorld.addSprite(zapdos);
     skyWorld.addSpriteCopyTo(runningHorse, 100, 200);  //example Sprite added to a World at a location, with a speed
     skyWorld.printWorldSprites();
@@ -170,7 +171,7 @@ public class Game extends PApplet{
 
     //SETUP: Setup endScreen constructor + objects
     endScreen = new World(p, "end", endBgFile);
-
+*/
     //SETUP: Set the starting screen for the game
     currentScreen = splashScreen;
 
