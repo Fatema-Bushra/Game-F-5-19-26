@@ -24,6 +24,16 @@ public class Game extends PApplet{
   String titleText = "BlackJack";
   String extraText = "One of many games in the Back-Alley Casino";
   String name = "Undefined";
+  // VARIABLES: Blackjack World
+  World blackjackWorld;
+  String blackjackBgFile = "images/green_felt.png"; 
+  Sprite deckSprite;
+
+  // VARIABLES: Blackjack Game Logic
+  Player player;
+  Deck deck;
+  Hand dealerHand;
+  int currentBet = 100; // Default starting bet
 
   // VARIABLES: Whole Game
   AnimatedSprite runningHorse;
@@ -78,10 +88,23 @@ public class Game extends PApplet{
 
   // Processing method that runs once for screen resolution settings
   public void settings() {
-    //SETUP: Match the screen size to the background image size
-    size(APP_WIDTH, APP_HEIGHT, JAVA2D);  //request app size from Processing here
-    // Allows p variable to be used by other classes to access PApplet methods
-    p = this;
+   // SETUP: Initialize Blackjack logic
+    player = new Player(1000); 
+    deck = new Deck(); 
+    dealerHand = new Hand(); 
+
+    // Deal initial hands
+    player.getHand().addCard(deck.drawCard());
+    dealerHand.addCard(deck.drawCard());
+    player.getHand().addCard(deck.drawCard());
+    dealerHand.addCard(deck.drawCard());
+
+    // SETUP: Construct Visual World
+    blackjackWorld = new World(p, "Blackjack Table", blackjackBgFile);
+    deckSprite = new Sprite("images/deck_back.png", 650.0f, 300.0f); // Placed on the right side
+    
+    // Optional: Make this the starting screen
+    currentScreen = blackjackWorld;
     
   }
 
@@ -345,6 +368,36 @@ public class Game extends PApplet{
     }
   }
 
+  // Syncs the Player/Dealer Hand ArrayLists with visual Sprites
+  public void updateCardSprites() {
+    
+    // Clear out old sprites to prevent overlapping
+    blackjackWorld.clearAllSprites(); 
+    blackjackWorld.addSprite(deckSprite);
+
+    // Render Dealer Cards (Top of screen)
+    float dealerStartX = 250.0f;
+    for (int i = 0; i < dealerHand.getCards().size(); i++) {
+      Card c = dealerHand.getCards().get(i);
+      
+      // Assumes you have images named like "A_of_Spades.png"
+      String imgName = "images/" + c.getRank() + "_of_" + c.getSuit() + ".png";
+      
+      // If it's the hidden second card, you might substitute the image for a card back here
+      Sprite cardSprite = new Sprite(imgName, dealerStartX + (i * 80), 100.0f);
+      blackjackWorld.addSprite(cardSprite);
+    }
+
+    // Render Player Cards (Bottom of screen)
+    float playerStartX = 250.0f;
+    for (int i = 0; i < player.getHand().getCards().size(); i++) {
+      Card c = player.getHand().getCards().get(i);
+      String imgName = "images/" + c.getRank() + "_of_" + c.getSuit() + ".png";
+      Sprite cardSprite = new Sprite(imgName, playerStartX + (i * 80), 400.0f);
+      blackjackWorld.addSprite(cardSprite);
+    }
+  }
+
   // Updates what is drawn on the screen each frame
   public void updateScreen(){
 
@@ -353,37 +406,31 @@ public class Game extends PApplet{
 
     // UPDATE: splashScreen
     if(currentScreen == splashScreen){
+// UPDATE: Blackjack Screen
+    if(currentScreen == blackjackWorld) {
+        
+      // Ensure the hand arrays match the sprites visually
+      updateCardSprites();
 
-      // Print an s in console when splashscreen is up
-      System.out.print("s");
+      // Standard Processing text methods for HUD
+      p.fill(PColor.WHITE); 
+      p.textSize(24);
+      p.textAlign(PConstants.CENTER);
 
-      // Change the screen to level 1 between 3 and 5 seconds
-      if(splashScreen.getScreenTime() > 3000 && splashScreen.getScreenTime() < 5000){
-        currentScreen = grid1;
+      // Dealer Points (Assuming standard rules: only the first card's value is visible initially)
+      if (dealerHand.getCards().size() > 0) {
+          int dealerVisiblePts = dealerHand.getCards().get(0).getValue(); 
+          p.text("Dealer Shows: " + dealerVisiblePts, APP_WIDTH / 2, 60);
       }
+
+      // Middle Screen: Bet and Balance
+      p.text("Current Bet: $" + currentBet, APP_WIDTH / 2, APP_HEIGHT / 2 - 20);
+      p.text("Total Balance: $" + player.getBalance(), APP_WIDTH / 2, APP_HEIGHT / 2 + 20);
+
+      // Player Total Points
+      int playerTotalPts = player.getHand().getValue();
+      p.text("Player Total: " + playerTotalPts, APP_WIDTH / 2, 550);
     }
-
-    // UPDATE: grid1 Screen
-    if(currentScreen == grid1){
-
-      // Print a '1' in console when level1
-      System.out.print("1");
-
-      // Displays the piece1 image at a new row or column
-      GridLocation piece1Loc = new GridLocation(piece1Row,piece1Col);
-      grid1.setTileImage(piece1Loc, piece1);
-
-      // Displays the chick image
-      GridLocation chickLoc = new GridLocation(chickRow, chickCol);
-      grid1.setTileSprite(chickLoc, chick);
-
-      // Moves to next level based on a button click
-      // b1.show();
-      if(b1.isClicked()){
-        System.out.println("\nButton Clicked");
-        currentScreen = skyWorld;
-      }
-    
     }
     
     // UPDATE: skyWorld Screen
