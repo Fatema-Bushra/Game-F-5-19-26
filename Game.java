@@ -385,7 +385,7 @@ public class Game extends PApplet{
       String imgName = "images/" + c.getRank() + "_of_" + c.getSuit() + ".png";
       
       // If it's the hidden second card, you might substitute the image for a card back here
-      Sprite cardSprite = new Sprite(imgName, dealerStartX + (i * 80), 100.0f);
+      Sprite cardSprite = new Sprite(p, imgName, dealerStartX + (i * 80), 100.0f);
       blackjackWorld.addSprite(cardSprite);
     }
 
@@ -394,7 +394,7 @@ public class Game extends PApplet{
     for (int i = 0; i < player.getHand().getCards().size(); i++) {
       Card c = player.getHand().getCards().get(i);
       String imgName = "images/" + c.getRank() + "_of_" + c.getSuit() + ".png";
-      Sprite cardSprite = new Sprite(imgName, playerStartX + (i * 80), 400.0f);
+      Sprite cardSprite = new Sprite(p, imgName, playerStartX + (i * 80), 400.0f);
       blackjackWorld.addSprite(cardSprite);
     }
   }
