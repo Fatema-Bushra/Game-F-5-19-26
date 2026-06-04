@@ -53,7 +53,7 @@ public class Sprite{
    * @param spriteImgFile filename for the non-animated sprite
    * @param scaleFactor         float that multiplies the size of the image to display
    */
-  public Sprite(PApplet p, String spriteImgFile, float scaleFactor, float par1){
+  public Sprite(PApplet p, String spriteImgFile, float scaleFactor){
     this(p, spriteImgFile, scaleFactor, 0.0f, 0.0f, false);
   }
 

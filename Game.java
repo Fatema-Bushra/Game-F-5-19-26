@@ -1,14 +1,18 @@
 /**
  * Game Class - Primary game logic for a Java-based Processing Game
- * @author Fatema Bushra
+ * @author Joel A Bianchi
  * @version 5/19/26
  * Revised structure to accomodate Docker webapp development
  */
 
 //import processing.sound.*;
+import java.io.InputStream;
+
 import processing.core.PApplet;
 import processing.core.PConstants;
+import processing.core.PFont;
 import processing.core.PImage;
+import processing.data.JSONObject;
 
 
 public class Game extends PApplet{
@@ -21,32 +25,22 @@ public class Game extends PApplet{
   public static final int APP_HEIGHT = 600;
 
   // VARIABLES: Title Bar
-  String titleText = "BlackJack";
-  String extraText = "One of many games in the Back-Alley Casino";
+  String titleText = "PEANUT CHESS SKY HORSE 2";
+  String extraText = "CurrentLevel?";
   String name = "Undefined";
-  // VARIABLES: Blackjack World
-  World blackjackWorld;
-  String blackjackBgFile = "images/Blackjack.jpg"; 
-  Sprite deckSprite;
-
-  // VARIABLES: Blackjack Game Logic
-  Player player;
-  Deck deck;
-  Hand dealerHand;
-  int currentBet = 100; // Default starting bet
 
   // VARIABLES: Whole Game
   AnimatedSprite runningHorse;
   boolean doAnimation;
 
-   // VARIABLES: splashScreen
+  // VARIABLES: splashScreen
   Screen splashScreen;
   String splashBgFile = "images/apcsa.png";
   //SoundFile song;
 
   // VARIABLES: grid1 Screen (pieces on a grid pattern)
   Grid grid1;
-  String grid1BgFile = "images/Blackjack.jpg";
+  String grid1BgFile = "images/chess.jpg";
   PImage piece1;   // Use PImage to display the image in a GridLocation
   String piece1File = "images/x_wood.png";
   int piece1Row = 3;
@@ -88,30 +82,16 @@ public class Game extends PApplet{
 
   // Processing method that runs once for screen resolution settings
   public void settings() {
-   // SETUP: Initialize Blackjack logic
-    player = new Player(1000); 
-    deck = new Deck(); 
-    dealerHand = new Hand(); 
-
-    // Deal initial hands
-    player.getHand().addCard(deck.drawCard());
-    dealerHand.addCard(deck.drawCard());
-    player.getHand().addCard(deck.drawCard());
-    dealerHand.addCard(deck.drawCard());
-
-    // SETUP: Construct Visual World
-    blackjackWorld = new World(p, "Blackjack Table", blackjackBgFile);
-    deckSprite = new Sprite(p, "images/deck.jpg", 650.0f, 300.0f); // Placed on the right side)
-    
-    // Optional: Make this the starting screen
-    currentScreen = blackjackWorld;
+    //SETUP: Match the screen size to the background image size
+    size(APP_WIDTH, APP_HEIGHT, JAVA2D);  //request app size from Processing here
+    // Allows p variable to be used by other classes to access PApplet methods
+    p = this;
     
   }
 
 
   // Required Processing method that gets run once
   // Place to put constructors, references, settings
-  @Override
   public void setup() {
 
     //SETUP: Set the title on the title bar
@@ -129,12 +109,12 @@ public class Game extends PApplet{
     runningHorse = new AnimatedSprite(p, "sprites/horse_run.png", "sprites/horse_run.json", 50.0f, 75.0f, 1.0f);
 
     //SETUP: Construct Splash Screen + objects
-    splashScreen = new Screen(p, "splash", blackjackBgFile);
+    splashScreen = new Screen(p, "splash", splashBgFile);
 
     //SETUP: Construct grid1 Screen + objects
-    grid1 = new Grid(p, "Blackjack Board", grid1BgFile, 6, 8);
-    //chick = new AnimatedSprite(p, chickFile, chickJson, 0.0f, 0.0f, 0.5f);
-    //b1 = new Button(p, "rect", 625, 525, 150, 50, "GoTo Level 2");
+    grid1 = new Grid(p, "chessBoard", grid1BgFile, 6, 8);
+    chick = new AnimatedSprite(p, chickFile, chickJson, 0.0f, 0.0f, 0.5f);
+    b1 = new Button(p, "rect", 625, 525, 150, 50, "GoTo Level 2");
     // b1.setFontStyle("fonts/spidermanFont.ttf");
     b1.setFontStyle("Calibri");
     b1.setTextColor(PColor.WHITE);
@@ -154,8 +134,8 @@ public class Game extends PApplet{
     System.out.println("Finished setup for grid1...");
     
     //SETUP: Setup skyWorld constructor and objects
-    /*skyWorld = new World(p, "sky", skyWorldBgFile, 4.0f, 0.0f, -600.0f); //moveable World constructor
-    zapdos = new Sprite(p, zapdosFile, 0.25f, 300.0F);
+    skyWorld = new World(p, "sky", skyWorldBgFile, 4.0f, 0.0f, -600.0f); //moveable World constructor
+    zapdos = new Sprite(p, zapdosFile, 0.25f);
     skyWorld.addSprite(zapdos);
     skyWorld.addSpriteCopyTo(runningHorse, 100, 200);  //example Sprite added to a World at a location, with a speed
     skyWorld.printWorldSprites();
@@ -171,7 +151,7 @@ public class Game extends PApplet{
 
     //SETUP: Setup endScreen constructor + objects
     endScreen = new World(p, "end", endBgFile);
-*/
+
     //SETUP: Set the starting screen for the game
     currentScreen = splashScreen;
 
@@ -369,36 +349,6 @@ public class Game extends PApplet{
     }
   }
 
-  // Syncs the Player/Dealer Hand ArrayLists with visual Sprites
-  public void updateCardSprites() {
-    
-    // Clear out old sprites to prevent overlapping
-    blackjackWorld.clearAllSprites(); 
-    blackjackWorld.addSprite(deckSprite);
-
-    // Render Dealer Cards (Top of screen)
-    float dealerStartX = 250.0f;
-    for (int i = 0; i < dealerHand.getCards().size(); i++) {
-      Card c = dealerHand.getCards().get(i);
-      
-      // Assumes you have images named like "A_of_Spades.png"
-      String imgName = "images/" + c.getRank() + "_of_" + c.getSuit() + ".png";
-      
-      // If it's the hidden second card, you might substitute the image for a card back here
-      Sprite cardSprite = new Sprite(p, imgName, dealerStartX + (i * 80), 100.0f);
-      blackjackWorld.addSprite(cardSprite);
-    }
-
-    // Render Player Cards (Bottom of screen)
-    float playerStartX = 250.0f;
-    for (int i = 0; i < player.getHand().getCards().size(); i++) {
-      Card c = player.getHand().getCards().get(i);
-      String imgName = "images/" + c.getRank() + "_of_" + c.getSuit() + ".png";
-      Sprite cardSprite = new Sprite(p, imgName, playerStartX + (i * 80), 400.0f);
-      blackjackWorld.addSprite(cardSprite);
-    }
-  }
-
   // Updates what is drawn on the screen each frame
   public void updateScreen(){
 
@@ -407,31 +357,37 @@ public class Game extends PApplet{
 
     // UPDATE: splashScreen
     if(currentScreen == splashScreen){
-// UPDATE: Blackjack Screen
-    if(currentScreen == blackjackWorld) {
-        
-      // Ensure the hand arrays match the sprites visually
-      updateCardSprites();
 
-      // Standard Processing text methods for HUD
-      p.fill(PColor.WHITE); 
-      p.textSize(24);
-      p.textAlign(PConstants.CENTER);
+      // Print an s in console when splashscreen is up
+      System.out.print("s");
 
-      // Dealer Points (Assuming standard rules: only the first card's value is visible initially)
-      if (dealerHand.getCards().size() > 0) {
-          int dealerVisiblePts = dealerHand.getCards().get(0).getValue(); 
-          p.text("Dealer Shows: " + dealerVisiblePts, APP_WIDTH / 2, 60);
+      // Change the screen to level 1 between 3 and 5 seconds
+      if(splashScreen.getScreenTime() > 3000 && splashScreen.getScreenTime() < 5000){
+        currentScreen = grid1;
       }
-
-      // Middle Screen: Bet and Balance
-      p.text("Current Bet: $" + currentBet, APP_WIDTH / 2, APP_HEIGHT / 2 - 20);
-      p.text("Total Balance: $" + player.getBalance(), APP_WIDTH / 2, APP_HEIGHT / 2 + 20);
-
-      // Player Total Points
-      int playerTotalPts = player.getHand().getValue();
-      p.text("Player Total: " + playerTotalPts, APP_WIDTH / 2, 550);
     }
+
+    // UPDATE: grid1 Screen
+    if(currentScreen == grid1){
+
+      // Print a '1' in console when level1
+      System.out.print("1");
+
+      // Displays the piece1 image at a new row or column
+      GridLocation piece1Loc = new GridLocation(piece1Row,piece1Col);
+      grid1.setTileImage(piece1Loc, piece1);
+
+      // Displays the chick image
+      GridLocation chickLoc = new GridLocation(chickRow, chickCol);
+      grid1.setTileSprite(chickLoc, chick);
+
+      // Moves to next level based on a button click
+      // b1.show();
+      if(b1.isClicked()){
+        System.out.println("\nButton Clicked");
+        currentScreen = skyWorld;
+      }
+    
     }
     
     // UPDATE: skyWorld Screen
