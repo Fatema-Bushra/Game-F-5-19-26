@@ -1,130 +1,79 @@
-/**
- * Game Class - Primary game logic for a Java-based Processing Game
- * @author Fatema Bushra
- * @version 5/19/26
- * Revised structure to accomodate Docker webapp development
- */
-
-//import processing.sound.*;
 import processing.core.PApplet;
-import processing.core.PConstants;
 import processing.core.PImage;
+import java.util.HashMap;
 
 
-public class Game extends PApplet{
 
-  //------------------ GAME VARIABLES --------------------//
+public class Game extends PApplet {
 
-  // VARIABLES: Processing variable to do Processing things
+  // --- Visual Layout Fields ---
+HashMap<String, PImage> cardImages;
+PImage backOfCardImage;
+
   PApplet p;
   public static final int APP_WIDTH = 800;
   public static final int APP_HEIGHT = 600;
 
-  // VARIABLES: Title Bar
-  String titleText = "BlackJack";
-  String extraText = "One of many games in the Back-Alley Casino";
-  String name = "Undefined";
-  // VARIABLES: Blackjack World
-  World blackjackWorld;
-  String blackjackBgFile = "images/Blackjack.jpg"; 
-  Sprite deckSprite;
-
-  // VARIABLES: Blackjack Game Logic
-  Player player;
-  Deck deck;
-  Hand dealerHand;
-  int currentBet = 100; // Default starting bet
-
-  // VARIABLES: Whole Game
-  AnimatedSprite runningHorse;
-  boolean doAnimation;
-
-   // VARIABLES: splashScreen
-  Screen splashScreen;
-  String splashBgFile = "images/apcsa.png";
-  //SoundFile song;
-
-  // VARIABLES: grid1 Screen (pieces on a grid pattern)
-  Grid grid1;
-  String grid1BgFile = "images/Blackjack.jpg";
-  PImage piece1;   // Use PImage to display the image in a GridLocation
-  String piece1File = "images/x_wood.png";
-  int piece1Row = 3;
-  int piece1Col = 0;
-  AnimatedSprite chick;
-  String chickFile = "sprites/chick_walk.png";
-  String chickJson = "sprites/chick_walk.json";
-  int chickRow = 0;
-  int chickCol = 2;
-  int health = 3;
-  Button b1;
-
-  // VARIABLES: skyWorld Screen (characters move by pixels)
-  World skyWorld;
-  String skyWorldBgFile = "images/sky.png";
-  Sprite zapdos; //Use Sprite for a pixel-based Location
-  String zapdosFile = "images/zapdos.png";
-  int zapdosStartX = 50;
-  int zapdosStartY = 300;
-
-  //VARIABLES: brickWorld Screen (characters jump on platforms with gravity)
-  World brickWorld;
-  String brickWorldBgFile = "images/wall.jpg";
-  Platform plat;
-
-  // VARIABLES: endScreen
-  World endScreen;
-  String endBgFile = "images/youwin.png";
-
-
-  // VARIABLES: Tracking the current Screen being displayed
-  Screen currentScreen;
-  CycleTimer slowCycleTimer;
-
-  boolean start = true;
-
-
-  //------------------ REQUIRED PROCESSING METHODS --------------------//
-
-  // Processing method that runs once for screen resolution settings
   public void settings() {
-   // SETUP: Initialize Blackjack logic
-    player = new Player(1000); 
-    deck = new Deck(); 
-    dealerHand = new Hand(); 
-
-    // Deal initial hands
-    player.getHand().addCard(deck.drawCard());
-    dealerHand.addCard(deck.drawCard());
-    player.getHand().addCard(deck.drawCard());
-    dealerHand.addCard(deck.drawCard());
-
-    // SETUP: Construct Visual World
-    blackjackWorld = new World(p, "Blackjack Table", blackjackBgFile);
-    deckSprite = new Sprite(p, "images/deck.jpg", 650.0f, 300.0f); // Placed on the right side)
-    
-    // Optional: Make this the starting screen
-    currentScreen = blackjackWorld;
+    //SETUP: Match the screen size to the background image size
+    size(APP_WIDTH, APP_HEIGHT, JAVA2D);  //request app size from Processing here
+    // Allows p variable to be used by other classes to access PApplet methods
+    p = this;
     
   }
 
-
-  // Required Processing method that gets run once
-  // Place to put constructors, references, settings
-  @Override
+  
+  // 1. Declare the Blackjack backend object
+  Blackjack blackjack;
+  String bettingInput = "";     // Temporarily holds the numbers the player types
+  boolean enteringBet = true;   // Tracks if the player is currently typing a bet
+  
   public void setup() {
+    // ... your existing setup code ...
+    blackjack = new Blackjack(1000);
+    cardImages = new HashMap<String, PImage>();
 
-    //SETUP: Set the title on the title bar
-    if (surface != null) {
-      surface.setTitle("Peanut Chess Sky Horse 2"); 
+    // Load the card back image (Make sure you have a card back file or substitute name)
+    backOfCardImage = loadImage("images/cardBack.png"); 
+
+    // Generate strings matching your exact file names to load all 52 cards
+    String[] suits = {"Hearts", "Diamonds", "Clubs", "Spades"};
+    String[] ranks = {"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"};
+
+    for (String suit : suits) {
+        for (String rank : ranks) {
+            // Translate short names to full names if your files use them
+            String fullRank = rank;
+            //if (rank.equals("A")) fullRank = "Ace";
+            //else if (rank.equals("J")) fullRank = "Jack";
+            //else if (rank.equals("Q")) fullRank = "Queen";
+            //else if (rank.equals("K")) fullRank = "King";
+
+            // Example file path string: "images/2_of_Clubs.png"
+            String fileName = "images/" + fullRank + "_of_" + suit + ".png"; 
+            
+            PImage img = loadImage(fileName);
+            if (img != null) {
+                // Store using a unique key combination, e.g., "2Clubs" or "AceHearts"
+                cardImages.put(rank + suit, img);
+            }
+        }
     }
+<<<<<<< HEAD
     this.imageMode(PConstants.CORNER);    //Set Images to read coordinates at corners
     this.width = APP_WIDTH;
     this.height = APP_HEIGHT;
     this.pixelWidth = APP_WIDTH;
     this.pixelHeight = APP_HEIGHT;
+=======
+}
+>>>>>>> 6ed1ac156c537b3780dc382dc439ae2b820b0344
 
+@Override
+public void draw() {
+    background(20, 110, 50); // Poker room green felt felt
     
+<<<<<<< HEAD
     //SETUP: Construct Game objects used in All Screens
     runningHorse = new AnimatedSprite(p, "sprites/horse_run.png", "sprites/horse_run.json", 50.0f, 75.0f, 1.0f);
 
@@ -243,8 +192,31 @@ public class Game extends PApplet{
     int slowCycleTime = 300;  //milliseconds
     if(slowCycleTimer == null){
       slowCycleTimer = new CycleTimer(p, slowCycleTime);
+=======
+    // 1. Render Table UI Information
+    textSize(24);
+    fill(255);
+    text("Bankroll Balance: $" + blackjack.getBalance(), 50, 40);
+    text("Status: " + blackjack.getGameMessage(), 50, 80);
+    
+    // 2. DRAW THE DECK IN THE MIDDLE
+    int deckX = 600;
+    int deckY = 100;
+    if (backOfCardImage != null) {
+        // Draw a stacked effect using 3 offset images
+        image(backOfCardImage, deckX + 4, deckY + 4, 90, 130);
+        image(backOfCardImage, deckX + 2, deckY + 2, 90, 130);
+        image(backOfCardImage, deckX, deckY, 90, 130);
+    } else {
+        fill(40, 40, 40);
+        rect(deckX, deckY, 90, 130, 5);
+>>>>>>> 6ed1ac156c537b3780dc382dc439ae2b820b0344
     }
+    fill(255);
+    textSize(14);
+    //text("DECK", deckX + 25, deckY + 70);
 
+<<<<<<< HEAD
     // DRAW LOOP: Populate & Move Sprites
     if(slowCycleTimer.isDone()){
       populateSprites();
@@ -409,10 +381,31 @@ public class Game extends PApplet{
     if(currentScreen == splashScreen){
 // UPDATE: Blackjack Screen
     if(currentScreen == blackjackWorld) {
+=======
+    // --- PHASE 1: Custom Bet Entry Mode ---
+    if (enteringBet && blackjack.getBalance() > 0) {
+        fill(255, 255, 150);
+        textSize(24);
+        text("Type your bet amount: $" + bettingInput + "_", 50, 140);
+>>>>>>> 6ed1ac156c537b3780dc382dc439ae2b820b0344
         
-      // Ensure the hand arrays match the sprites visually
-      updateCardSprites();
+        textSize(14);
+        fill(200);
+        text("Type digits [0-9], BACKSPACE to edit, ENTER to confirm deal.", 50, 180);
+        text("Press 'R' at any time to request a complete engine profile reset.", 50, 200);
+    }
+    
+    // --- PHASE 2: Bankrupt View ---
+    else if (blackjack.getBalance() <= 0 && blackjack.isRoundOver()) {
+        fill(255, 50, 50);
+        textSize(32);
+        text("BANKRUPT!", 50, 140);
+        textSize(18);
+        fill(255);
+        text("Press 'R' to wipe profile and transfer a fresh $1000 balance.", 50, 180);
+    }
 
+<<<<<<< HEAD
       // Standard Processing text methods for HUD
       this.fill(PColor.WHITE); 
       this.textSize(24);
@@ -467,94 +460,159 @@ public class Game extends PApplet{
     // UPDATE: Other built-in to current World/Grid/HexGrid
     currentScreen.show();
 
-  }
+=======
+    // --- PHASE 3: Active Card Dealing Hands ---
+    if (blackjack.getPlayer().getHand().getCards().size() > 0) {
+        
+        // --- DEALER HAND (Top Region of Table) ---
+        fill(255);
+        textSize(18);
+        if (blackjack.isRoundOver()) {
+            text("Dealer Hand (Total: " + blackjack.getDealerHand().getValue() + ")", 50, 250);
+        } else {
+            text("Dealer Hand (Showing Card value)", 50, 250);
+        }
+        // Call helper: hide first card if the game state round is actively running
+        drawHandVisuals(blackjack.getDealerHand(), 50, 270, true);
+        
+        // --- PLAYER HAND (Bottom Region of Table) ---
+        fill(255);
+        textSize(18);
+        text("Your Hand (Total: " + blackjack.getPlayer().getHand().getValue() + ")", 50, 420);
+        // Call helper: player cards are always fully visible
+        drawHandVisuals(blackjack.getPlayer().getHand(), 50, 430, false);
+        
+        // Display hotkeys prompt while hand is open
+        if (!blackjack.isRoundOver()) {
+            fill(255, 255, 150);
+            textSize(16);
+            text("Options: Press 'H' to Hit  |  Press 'S' to Stand", width - 350, height - 40);
+        }
+    }
+}
 
-  // Populates enemies or other sprites on the Screen
-  public void populateSprites(){
-
-    //What is the index for the last column?
+  // 4. Trigger methods when GUI inputs happen (like keys or custom Button clicks)
+  @Override
+public void keyPressed() {
     
+    // --- CASE A: Player is Bankrupt ---
+    if (blackjack.getBalance() <= 0 && blackjack.isRoundOver()) {
+        // Only allow resetting the full game
+        if (key == 'r' || key == 'R') {
+            blackjack = new Blackjack(1000); // Start totally fresh
+            bettingInput = "";
+            enteringBet = true;
+        }
+        return; // Block all other keys
+    }
 
-    //Loop through all the rows in the last column
-
-      //Generate a random number
-
-
-      //10% of the time, decide to add an enemy image to a Tile
-      
-
-  }
-
-  // Moves around the enemies/sprites on the Screen
-  public void moveSprites(){
-
-    //Loop through all of the rows & cols in the grid
-
-        //Store the current GridLocation
-
-        //Store the next GridLocation
-
-        //Check if the current tile has an image that is not piece1      
-
-
-          //Get image/sprite from current location
-            
-
-          //CASE 1: Collision with piece1
-
-
-          //CASE 2: Move enemy over to new location
-
-
-          //Erase image/sprite from old location
-
-          //System.out.println(loc + " " + grid.hasTileImage(loc));
-
-            
-        //CASE 3: Enemy leaves screen at first column
-
-  }
-
-  // Checks if there is a collision between Sprites on the Screen
-  public boolean checkCollision(GridLocation loc, GridLocation nextLoc){
-
-    //Check what image/sprite is stored in the CURRENT location
-    // PImage image = grid.getTileImage(loc);
-    // AnimatedSprite sprite = grid.getTileSprite(loc);
-
-    //if empty --> no collision
-
-    //Check what image/sprite is stored in the NEXT location
-
-    //if empty --> no collision
-
-    //check if enemy runs into player
-
-      //clear out the enemy if it hits the player (using cleartTileImage() or clearTileSprite() from Grid class)
-
-      //Update status variable
-
-    //check if a player collides into enemy
-
-    return false; //<--default return
-  }
-
-  // Indicates when the main game is over
-  public boolean isGameOver(){
+    // --- CASE B: Choosing/Typing a Bet ---
+    if (enteringBet) {
+        if (key >= '0' && key <= '9') {
+            bettingInput += key; // Append typed digit to the string
+        } 
+        else if (key == BACKSPACE && bettingInput.length() > 0) {
+            bettingInput = bettingInput.substring(0, bettingInput.length() - 1); // Delete last digit
+        } 
+        else if (key == ENTER || key == RETURN) {
+            if (bettingInput.length() > 0) {
+                int customBet = Integer.parseInt(bettingInput);
+                
+                // Attempt to start the round with this bet
+                boolean success = blackjack.startRound(customBet);
+                if (success) {
+                    enteringBet = false; // Successfully moved to playing phase
+                } else {
+                    bettingInput = ""; // Reset incorrect bet input (e.g., betting more than owned)
+                }
+            }
+        }
+        // Allow restarting a completely fresh game even before bankrupt
+        if (key == 'r' || key == 'R') {
+            blackjack = new Blackjack(1000);
+            bettingInput = "";
+        }
+    } 
     
-    return false; //by default, the game is never over
+    // --- CASE C: Round is Active (Hit or Stand) ---
+    else {
+        if (key == 'h' || key == 'H') {
+            blackjack.hit();
+            
+            // If hitting caused a bust, round is instantly over
+            if (blackjack.isRoundOver()) {
+                handleRoundEnding();
+            }
+        } 
+        else if (key == 's' || key == 'S') {
+            blackjack.stand();
+            handleRoundEnding();
+        }
+    }
+}
+
+/**
+ * Helper method to determine where the player goes next after a hand finishes
+ */
+private void handleRoundEnding() {
+    if (blackjack.getBalance() <= 0) {
+        // Player is broke! Force them to restart
+        enteringBet = false; 
+    } else {
+        // Player still has money! Transfer balance over and ask for a new custom bet
+        bettingInput = "";
+        enteringBet = true; 
+    }
+}
+
+/**
+ * Draws a hand of cards horizontally across the screen
+ * @param hand The Hand object containing cards
+ * @param startX The starting X position on screen
+ * @param startY The starting Y position on screen
+ * @param hideFirstCard True if this is the dealer's face-down card setup
+ */
+public void drawHandVisuals(Hand hand, float startX, float startY, boolean hideFirstCard) {
+  float xOffset = 0;
+  int cardWidth = 90;   // Adjust card scale size to fit your custom screen layout
+  int cardHeight = 130;
+
+  for (int i = 0; i < hand.getCards().size(); i++) {
+      Card card = hand.getCards().get(i);
+      String lookupKey = card.getRank() + card.getSuit();
+      PImage cardImg = cardImages.get(lookupKey);
+
+      // Position for this specific card
+      float currentX = startX + xOffset;
+
+      // If it's the dealer's first card and the round is still active, draw it face down
+      if (i == 0 && hideFirstCard && !blackjack.isRoundOver()) {
+          if (backOfCardImage != null) {
+              image(backOfCardImage, currentX, startY, cardWidth, cardHeight);
+          } else {
+              // Fallback rectangle if card back image is missing
+              fill(0, 0, 150);
+              rect(currentX, startY, cardWidth, cardHeight, 5);
+          }
+      } else {
+          // Draw the real face-up card image asset
+          if (cardImg != null) {
+              image(cardImg, currentX, startY, cardWidth, cardHeight);
+          } else {
+              // Fallback text card box if file loading had a typo path
+              fill(255);
+              stroke(0);
+              rect(currentX, startY, cardWidth, cardHeight, 5);
+              fill(0);
+              textSize(16);
+              text(card.getRank() + "\n" + card.getSuit().substring(0,3), currentX + 10, startY + 30);
+          }
+      }
+
+      // Space out subsequent cards slightly overlapping to look natural
+      xOffset += 110; 
+>>>>>>> 6ed1ac156c537b3780dc382dc439ae2b820b0344
   }
+}
 
-  // Describes what happens after the game is over
-  public void endGame(){
-      System.out.println("Game Over!");
-
-      // Update the title bar
-
-      // Show any end imagery
-      currentScreen = endScreen;
-
-  }
-
-
-} // end of Game class
+}
