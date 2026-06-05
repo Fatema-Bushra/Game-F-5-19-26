@@ -1,4 +1,3 @@
-import java.util.Scanner;
 
 public class Blackjack {
 
@@ -46,10 +45,8 @@ public class Blackjack {
 
         gameMessage = "Hit or Stand?";
 
-        // Check for immediate Naturals
-        if (player.getHand().isNatural21() || dealerHand.isNatural21()) {
-            evaluateWinners();
-        }
+        // The immediate check for Natural 21s has been removed here, 
+        // allowing the player to manually press 'H' or 'S' to continue.
 
         return true;
     }

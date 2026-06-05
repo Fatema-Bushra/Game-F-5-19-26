@@ -105,7 +105,7 @@ public void draw() {
     }
 
     // --- PHASE 3: Active Card Dealing Hands ---
-    if (blackjack.getPlayer().getHand().getCards().size() > 0) {
+    if (!blackjack.getPlayer().getHand().getCards().isEmpty()) {
         
         // --- DEALER HAND (Top Region of Table) ---
         fill(255);
