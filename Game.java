@@ -118,11 +118,11 @@ public class Game extends PApplet{
     if (surface != null) {
       surface.setTitle("Peanut Chess Sky Horse 2"); 
     }
-    p.imageMode(PConstants.CORNER);    //Set Images to read coordinates at corners
+    this.imageMode(PConstants.CORNER);    //Set Images to read coordinates at corners
     this.width = APP_WIDTH;
     this.height = APP_HEIGHT;
-    p.pixelWidth = APP_WIDTH;
-    p.pixelHeight = APP_HEIGHT;
+    this.pixelWidth = APP_WIDTH;
+    this.pixelHeight = APP_HEIGHT;
 
     
     //SETUP: Construct Game objects used in All Screens
@@ -136,11 +136,11 @@ public class Game extends PApplet{
     //chick = new AnimatedSprite(p, chickFile, chickJson, 0.0f, 0.0f, 0.5f);
     //b1 = new Button(p, "rect", 625, 525, 150, 50, "GoTo Level 2");
     // b1.setFontStyle("fonts/spidermanFont.ttf");
-    b1.setFontStyle("Calibri");
-    b1.setTextColor(PColor.WHITE);
-    b1.setButtonColor(PColor.BLACK);
-    b1.setHoverColor(PColor.get(100,50,200));
-    b1.setOutlineColor(PColor.WHITE);
+    // b1.setFontStyle("Calibri");
+    // b1.setTextColor(PColor.WHITE);
+    // b1.setButtonColor(PColor.BLACK);
+    // b1.setHoverColor(PColor.get(100,50,200));
+    // b1.setOutlineColor(PColor.WHITE);
     String[][] tileMarks = {
       {"R","N","B","Q","K","B","N","R"},
       {"P","P","P","P","P","P","P","P"},
@@ -203,7 +203,7 @@ public class Game extends PApplet{
     grid1.initialRender();
     chick.initialRender();
     grid1.setTileSprite(new GridLocation (chickRow, chickCol), chick);
-    grid1.addSprite(b1);
+    // grid1.addSprite(b1);
     piece1 = Resource.loadImage(piece1File);
     piece1.resize(grid1.getTileWidth(),grid1.getTileHeight());
     System.out.println("Done intial render of grid1...");
@@ -268,7 +268,7 @@ public class Game extends PApplet{
   public void keyPressed(){
 
     //check what key was pressed
-    System.out.println("\nKey pressed: " + p.keyCode); //key gives you a character for the key pressed
+    System.out.println("\nKey pressed: " + this.keyCode); //key gives you a character for the key pressed
 
     //What to do when a key is pressed?
     
@@ -276,19 +276,19 @@ public class Game extends PApplet{
     if(currentScreen == grid1){
 
       //set [S] key to move the chick down & avoid Out-of-Bounds errors
-      if(p.keyCode == 83){        
+      if(this.keyCode == 83){        
 
         //change the field for chickRow
         chickRow++;
       }
 
       // if the 'n' key is pressed, ask for their name
-      if(p.key == 'n'){
+      if(this.key == 'n'){
         name = Input.getString("What is your name?");
       }
 
       // if the 't' key is pressed, then toggle the animation on/off
-      if(p.key == 't'){
+      if(this.key == 't'){
         //Toggle the animation on & off
         doAnimation = !doAnimation;
         System.out.println("doAnimation: " + doAnimation);
@@ -299,18 +299,18 @@ public class Game extends PApplet{
     }
 
     if(currentScreen == brickWorld){
-      if(p.key == 'w'){
+      if(this.key == 'w'){
         plat.jump();
       }
     }
 
     //CHANGING SCREENS BASED ON KEYS
     //change to level1 if 1 key pressed, level2 if 2 key is pressed
-    if(p.key == '1'){
+    if(this.key == '1'){
       currentScreen = grid1;
-    } else if(p.key == '2'){
+    } else if(this.key == '2'){
       currentScreen = skyWorld;
-    } else if(p.key == '3'){
+    } else if(this.key == '3'){
       currentScreen = brickWorld;
 
       //reset the moving Platform every time the Screen is re-displayed
@@ -324,10 +324,10 @@ public class Game extends PApplet{
   public void mouseClicked(){
     
     // Print coordinates of mouse click
-    System.out.println("\nMouse was clicked at (" + p.mouseX + "," + p.mouseY + ")");
+    System.out.println("\nMouse was clicked at (" + this.mouseX + "," + this.mouseY + ")");
 
     // Display color of pixel clicked
-    int color = p.get(p.mouseX, p.mouseY);
+    int color = this.get(this.mouseX, this.mouseY);
     PColor.printPColor(p, color);
 
     // if the Screen is a Grid, print grid coordinate clicked
@@ -385,7 +385,7 @@ public class Game extends PApplet{
       String imgName = "images/" + c.getRank() + "_of_" + c.getSuit() + ".png";
       
       // If it's the hidden second card, you might substitute the image for a card back here
-      Sprite cardSprite = new Sprite(imgName, dealerStartX + (i * 80), 100.0f);
+      Sprite cardSprite = new Sprite(this, imgName, dealerStartX + (i * 80), 100.0f);
       blackjackWorld.addSprite(cardSprite);
     }
 
@@ -394,7 +394,7 @@ public class Game extends PApplet{
     for (int i = 0; i < player.getHand().getCards().size(); i++) {
       Card c = player.getHand().getCards().get(i);
       String imgName = "images/" + c.getRank() + "_of_" + c.getSuit() + ".png";
-      Sprite cardSprite = new Sprite(imgName, playerStartX + (i * 80), 400.0f);
+      Sprite cardSprite = new Sprite(this, imgName, playerStartX + (i * 80), 400.0f);
       blackjackWorld.addSprite(cardSprite);
     }
   }
@@ -414,23 +414,23 @@ public class Game extends PApplet{
       updateCardSprites();
 
       // Standard Processing text methods for HUD
-      p.fill(PColor.WHITE); 
-      p.textSize(24);
-      p.textAlign(PConstants.CENTER);
+      this.fill(PColor.WHITE); 
+      this.textSize(24);
+      this.textAlign(PConstants.CENTER);
 
       // Dealer Points (Assuming standard rules: only the first card's value is visible initially)
       if (dealerHand.getCards().size() > 0) {
           int dealerVisiblePts = dealerHand.getCards().get(0).getValue(); 
-          p.text("Dealer Shows: " + dealerVisiblePts, APP_WIDTH / 2, 60);
+          this.text("Dealer Shows: " + dealerVisiblePts, APP_WIDTH / 2, 60);
       }
 
       // Middle Screen: Bet and Balance
-      p.text("Current Bet: $" + currentBet, APP_WIDTH / 2, APP_HEIGHT / 2 - 20);
-      p.text("Total Balance: $" + player.getBalance(), APP_WIDTH / 2, APP_HEIGHT / 2 + 20);
+      this.text("Current Bet: $" + currentBet, APP_WIDTH / 2, APP_HEIGHT / 2 - 20);
+      this.text("Total Balance: $" + player.getBalance(), APP_WIDTH / 2, APP_HEIGHT / 2 + 20);
 
       // Player Total Points
       int playerTotalPts = player.getHand().getValue();
-      p.text("Player Total: " + playerTotalPts, APP_WIDTH / 2, 550);
+      this.text("Player Total: " + playerTotalPts, APP_WIDTH / 2, 550);
     }
     }
     
