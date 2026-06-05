@@ -135,4 +135,7 @@ public class Blackjack {
     public String getGameMessage() { return gameMessage; }
     public boolean isRoundOver() { return isRoundOver; }
     public int getBalance() { return player.getBalance(); }
+    public int getCurrentBet() { 
+        return currentBet; 
+    }
 }

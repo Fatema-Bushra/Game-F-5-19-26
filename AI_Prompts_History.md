@@ -1405,4 +1405,125 @@ public class Game extends PApplet {
   }
 }
 
+## 7
+make it so that the user can continue playing even if either they or the dealer has a natural 21
+
+To allow the player to continue playing even if a natural 21 is dealt off the bat, you need to remove the automatic check that immediately ends the round.
+
+In your Blackjack.java file, the startRound() method currently checks for a natural 21 right after dealing the first four cards and automatically calls evaluateWinners().
+
+Here is the modified startRound() method with that automatic check removed. You can completely replace your existing method with this one:
+
+Updated Blackjack.java
+Java
+    /**
+     * Starts a brand new round of Blackjack with a specified bet.
+     * @param bet The amount the player wants to wager
+     * @return boolean True if the bet was valid and round started, false otherwise
+     */
+    public boolean startRound(int bet) {
+        if (bet > player.getBalance() || bet <= 0) {
+            gameMessage = "Invalid bet amount.";
+            return false;
+        }
+
+        this.currentBet = bet;
+        this.deck = new Deck();
+        this.player.resetHand();
+        this.dealerHand = new Hand();
+        this.isRoundOver = false;
+
+        // Deal initial 2 cards to each
+        player.getHand().addCard(deck.drawCard());
+        dealerHand.addCard(deck.drawCard());
+        player.getHand().addCard(deck.drawCard());
+        dealerHand.addCard(deck.drawCard());
+
+        gameMessage = "Hit or Stand?";
+
+        // The immediate check for Natural 21s has been removed here, 
+        // allowing the player to manually press 'H' or 'S' to continue.
+
+        return true;
+    }
+Why this works:
+By removing the if (player.getHand().isNatural21() || dealerHand.isNatural21()) { evaluateWinners(); } block, isRoundOver stays false. This leaves control in the hands of the player in Game.java, where they can press 'H' to Hit or 'S' to Stand. Once they eventually choose to stand, the existing evaluateWinners() logic will still correctly identify the natural 21s and distribute the payouts accordingly.
+
+## 8
+edit the game class so that the bet amount is displayed throughout the round, then changes into amount won or amount lost if the user wins or loses a round (if it;s a tie display no change)
+
+To dynamically display the bet and the resulting win/loss amounts, we need to make a small addition to your Blackjack.java backend to expose the bet amount, and then update the rendering logic in Game.java.
+
+1. Add a Getter to Blackjack.java
+Currently, Blackjack.java tracks the currentBet, but Game.java has no way to read it once the round starts.
+
+Add this single getter method to the bottom of your Blackjack.java file alongside your other getters:
+
+Java
+    public int getCurrentBet() { 
+        return currentBet; 
+    }
+2. Update the Draw Loop in Game.java
+Now, we can update Phase 3 of the draw() method in Game.java. We will use standard Processing text(), fill(), and textAlign() methods to center the bet amount on the screen.
+
+When blackjack.isRoundOver() becomes true, we can check the blackjack.getGameMessage() to determine if the text should turn green for a win, red for a loss, or gray for a tie.
+
+Replace your existing // --- PHASE 3: Active Card Dealing Hands --- block with this updated version:
+
+Java
+    // --- PHASE 3: Active Card Dealing Hands ---
+    if (!blackjack.getPlayer().getHand().getCards().isEmpty()) {
+        
+        // --- DEALER HAND (Top Region of Table) ---
+        fill(255);
+        textSize(18);
+        if (blackjack.isRoundOver()) {
+            text("Dealer Hand (Total: " + blackjack.getDealerHand().getValue() + ")", 50, 250);
+        } else {
+            text("Dealer Hand (Showing Card value)", 50, 250);
+        }
+        // Call helper: hide first card if the game state round is actively running
+        drawHandVisuals(blackjack.getDealerHand(), 50, 270, true);
+        
+        // --- PLAYER HAND (Bottom Region of Table) ---
+        fill(255);
+        textSize(18);
+        text("Your Hand (Total: " + blackjack.getPlayer().getHand().getValue() + ")", 50, 420);
+        // Call helper: player cards are always fully visible
+        drawHandVisuals(blackjack.getPlayer().getHand(), 50, 430, false);
+        
+        // --- NEW: Bet / Outcome Display in Middle of Screen ---
+        textSize(24);
+        textAlign(CENTER); // Center align for middle table text
+        
+        if (!blackjack.isRoundOver()) {
+            // Round is active: show the current bet in Gold
+            fill(255, 215, 0); 
+            text("Current Bet: $" + blackjack.getCurrentBet(), width / 2, 360);
+        } else {
+            // Round is over: determine win, loss, or tie based on the game message
+            String outcomeMsg = blackjack.getGameMessage();
+            
+            if (outcomeMsg.contains("You win")) {
+                fill(50, 255, 50); // Green for Win
+                text("Amount Won: +$" + blackjack.getCurrentBet(), width / 2, 360);
+            } else if (outcomeMsg.contains("Tie") || outcomeMsg.contains("Push")) {
+                fill(200); // Gray for Tie
+                text("Push: No Change", width / 2, 360);
+            } else {
+                fill(255, 50, 50); // Red for Loss
+                text("Amount Lost: -$" + blackjack.getCurrentBet(), width / 2, 360);
+            }
+        }
+        
+        textAlign(LEFT); // Reset text alignment to standard left for other UI elements
+        
+        // Display hotkeys prompt while hand is open
+        if (!blackjack.isRoundOver()) {
+            fill(255, 255, 150);
+            textSize(16);
+            text("Options: Press 'H' to Hit  |  Press 'S' to Stand", width - 350, height - 40);
+        }
+    }
+
 
