@@ -91,7 +91,7 @@ public void draw() {
         textSize(14);
         fill(200);
         text("Type digits [0-9], BACKSPACE to edit, ENTER to confirm deal.", 50, 180);
-        text("Press 'R' at any time to request a complete engine profile reset.", 50, 200);
+        text("Press 'R' at any time to restart.", 50, 200);
     }
     
     // --- PHASE 2: Bankrupt View ---
@@ -104,7 +104,7 @@ public void draw() {
         text("Press 'R' to wipe profile and transfer a fresh $1000 balance.", 50, 180);
     }
 
-    // --- PHASE 3: Active Card Dealing Hands ---
+// --- PHASE 3: Active Card Dealing Hands ---
     if (!blackjack.getPlayer().getHand().getCards().isEmpty()) {
         
         // --- DEALER HAND (Top Region of Table) ---
@@ -118,6 +118,46 @@ public void draw() {
         // Call helper: hide first card if the game state round is actively running
         drawHandVisuals(blackjack.getDealerHand(), 50, 270, true);
         
+        // --- PLAYER HAND (Bottom Region of Table) ---
+        fill(255);
+        textSize(18);
+        text("Your Hand (Total: " + blackjack.getPlayer().getHand().getValue() + ")", 50, 420);
+        // Call helper: player cards are always fully visible
+        drawHandVisuals(blackjack.getPlayer().getHand(), 50, 430, false);
+        
+        // --- NEW: Bet / Outcome Display in Middle of Screen ---
+        textSize(24);
+        textAlign(CENTER); // Center align for middle table text
+        
+        if (!blackjack.isRoundOver()) {
+            // Round is active: show the current bet in Gold
+            fill(255, 215, 0); 
+            text("Current Bet: $" + blackjack.getCurrentBet(), width - 270, height - 70);
+        } else {
+            // Round is over: determine win, loss, or tie based on the game message
+            String outcomeMsg = blackjack.getGameMessage();
+            
+            if (outcomeMsg.contains("You win")) {
+                fill(50, 255, 50); // Green for Win
+                text("Amount Won: +$" + blackjack.getCurrentBet(), width - 270, height - 70);
+            } else if (outcomeMsg.contains("Tie") || outcomeMsg.contains("Push")) {
+                fill(200); // Gray for Tie
+                text("Push: No Change", width - 270, height - 70);
+            } else {
+                fill(255, 50, 50); // Red for Loss
+                text("Amount Lost: -$" + blackjack.getCurrentBet(), width - 270, height - 70);
+            }
+        }
+        
+        textAlign(LEFT); // Reset text alignment to standard left for other UI elements
+        
+        // Display hotkeys prompt while hand is open
+        if (!blackjack.isRoundOver()) {
+            fill(255, 255, 150);
+            textSize(16);
+            text("Options: Press 'H' to Hit  |  Press 'S' to Stand", width - 350, height - 40);
+        }
+    
         // --- PLAYER HAND (Bottom Region of Table) ---
         fill(255);
         textSize(18);
