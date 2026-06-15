@@ -1,30 +1,18 @@
-
 public class Blackjack {
 
-    // --- Fields to keep track of the current game state ---
-    private Player player;
+    private Player player; // Restored the original Player tracking logic
     private Hand dealerHand;
     private Deck deck;
     private int currentBet;
     private String gameMessage;
     private boolean isRoundOver;
 
-    /**
-     * Constructor initializes a player with a starting bankroll
-     */
-    public Blackjack(int startingBalance) {
-        this.player = new Player(startingBalance);
+    public Blackjack(BankAccount account) {
+        this.player = new Player(account); // Links Player to the shared bank reference
         this.gameMessage = "Place your bet to begin!";
-        this.isRoundOver = true; // Ready for a new round
+        this.isRoundOver = true;
     }
 
-    // --- Core Methods for the Game Class to use ---
-
-    /**
-     * Starts a brand new round of Blackjack with a specified bet.
-     * @param bet The amount the player wants to wager
-     * @return boolean True if the bet was valid and round started, false otherwise
-     */
     public boolean startRound(int bet) {
         if (bet > player.getBalance() || bet <= 0) {
             gameMessage = "Invalid bet amount.";
@@ -37,23 +25,15 @@ public class Blackjack {
         this.dealerHand = new Hand();
         this.isRoundOver = false;
 
-        // Deal initial 2 cards to each
         player.getHand().addCard(deck.drawCard());
         dealerHand.addCard(deck.drawCard());
         player.getHand().addCard(deck.drawCard());
         dealerHand.addCard(deck.drawCard());
 
         gameMessage = "Hit or Stand?";
-
-        // The immediate check for Natural 21s has been removed here, 
-        // allowing the player to manually press 'H' or 'S' to continue.
-
         return true;
     }
 
-    /**
-     * Player requests another card.
-     */
     public void hit() {
         if (isRoundOver) return;
 
@@ -66,13 +46,9 @@ public class Blackjack {
         }
     }
 
-    /**
-     * Player stands. The dealer plays out their hand, and winners are determined.
-     */
     public void stand() {
         if (isRoundOver) return;
 
-        // Dealer hits until hitting 17 or higher
         while (dealerHand.getValue() < 17) {
             dealerHand.addCard(deck.drawCard());
         }
@@ -80,9 +56,6 @@ public class Blackjack {
         evaluateWinners();
     }
 
-    /**
-     * Contains the outcome comparison logic taken directly from your original main method.
-     */
     private void evaluateWinners() {
         isRoundOver = true;
 
@@ -128,14 +101,10 @@ public class Blackjack {
         }
     }
 
-    // --- Getters to allow Game.java to read the current state for drawing ---
-
     public Player getPlayer() { return player; }
     public Hand getDealerHand() { return dealerHand; }
     public String getGameMessage() { return gameMessage; }
     public boolean isRoundOver() { return isRoundOver; }
     public int getBalance() { return player.getBalance(); }
-    public int getCurrentBet() { 
-        return currentBet; 
-    }
+    public int getCurrentBet() { return currentBet; }
 }

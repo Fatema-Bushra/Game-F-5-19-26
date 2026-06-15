@@ -1,12 +1,11 @@
 public class Player {
 
     private Hand hand;
-    private int balance;
+    private BankAccount account; 
 
-    public Player(int startingBalance) {
-
-        hand = new Hand();
-        balance = startingBalance;
+    public Player(BankAccount account) {
+        this.hand = new Hand();
+        this.account = account;
     }
 
     public Hand getHand() {
@@ -14,15 +13,15 @@ public class Player {
     }
 
     public int getBalance() {
-        return balance;
+        return account.getBalance();
     }
 
     public void winBet(int bet) {
-        balance += bet;
+        account.deposit((bet * 2)); // Net addition matching original payout mechanics
     }
 
     public void loseBet(int bet) {
-        balance -= bet;
+        account.withdraw(bet);
     }
 
     public void resetHand() {
