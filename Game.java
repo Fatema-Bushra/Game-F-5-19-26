@@ -67,15 +67,15 @@ public class Game extends PApplet {
         }
     }
     
-    // 4. Load High-Low Dice Assets
+    // 4. Load High-Low Dice Assets (FIXED PATH DIRECTIONS HERE)
     diceImages = new HashMap<Integer, PImage>();
-    cupImage = loadImage("cup.png");
-    diceImages.put(1, loadImage("oneSide.png"));
-    diceImages.put(2, loadImage("twoSide.png"));
-    diceImages.put(3, loadImage("threeSide.png"));
-    diceImages.put(4, loadImage("fourSide.png"));
-    diceImages.put(5, loadImage("fiveSide.png"));
-    diceImages.put(6, loadImage("sixSide.png"));
+    cupImage = loadImage("images/cup.png");
+    diceImages.put(1, loadImage("images/oneSide.png"));
+    diceImages.put(2, loadImage("images/twoSide.png"));
+    diceImages.put(3, loadImage("images/threeSide.png"));
+    diceImages.put(4, loadImage("images/fourSide.png"));
+    diceImages.put(5, loadImage("images/fiveSide.png"));
+    diceImages.put(6, loadImage("images/sixSide.png"));
 
     // Default cup positions
     cupX = width / 2f;
@@ -182,7 +182,7 @@ public class Game extends PApplet {
             String outcomeMsg = blackjack.getGameMessage();
             if (outcomeMsg.contains("You win") || outcomeMsg.contains("win!")) {
                 fill(50, 255, 50);
-                text("Amount Won: +$" + (blackjack.getCurrentBet() * 2), width - 150, height - 80);
+                text("Amount Won: +$" + blackjack.getCurrentBet(), width - 150, height - 80);
             } else if (outcomeMsg.contains("Tie") || outcomeMsg.contains("Push")) {
                 fill(200);
                 text("Push: No Change", width - 150, height - 80);
@@ -247,6 +247,11 @@ public class Game extends PApplet {
         imageMode(CENTER);
         image(cupImage, cupX, cupY, 180, 180);
         imageMode(CORNER);
+    } else {
+        fill(30, 30, 30, 220);
+        rectMode(CENTER);
+        rect(cupX, cupY, 140, 140, 15);
+        rectMode(CORNER);
     }
   }
 
@@ -256,8 +261,19 @@ public class Game extends PApplet {
     PImage img1 = diceImages.get(d1);
     PImage img2 = diceImages.get(d2);
 
-    if (img1 != null) image(img1, startX, startY, 100, 100);
-    if (img2 != null) image(img2, startX + 120, startY, 100, 100);
+    if (img1 != null) {
+        image(img1, startX, startY, 100, 100);
+    } else {
+        fill(255); rect(startX, startY, 100, 100, 10);
+        fill(0); textSize(20); text(d1, startX + 40, startY + 55);
+    }
+
+    if (img2 != null) {
+        image(img2, startX + 120, startY, 100, 100);
+    } else {
+        fill(255); rect(startX + 120, startY, 100, 100, 10);
+        fill(0); textSize(20); text(d2, startX + 160, startY + 55);
+    }
 
     fill(255);
     textSize(22);
@@ -272,7 +288,7 @@ public class Game extends PApplet {
     text("BANKRUPT!", 50, 140);
     textSize(18);
     fill(255);
-    text("Press 'R' to completely wipe profiles and claim a fresh $1000.", 50, 180);
+    text("Press 'R' to claim a fresh $1000.", 50, 180);
   }
 
   @Override
@@ -366,7 +382,7 @@ public class Game extends PApplet {
 
   public void drawHandVisuals(Hand hand, float startX, float startY, boolean hideFirstCard) {
     float xOffset = 0;
-    int cardWidth = 90;  
+    int cardWidth = 90;   
     int cardHeight = 130;
 
     for (int i = 0; i < hand.getCards().size(); i++) {
@@ -385,7 +401,7 @@ public class Game extends PApplet {
                 fill(0); textSize(16); text(card.getRank() + "\n" + card.getSuit().substring(0,3), currentX + 10, startY + 30);
             }
         }
-        xOffset += 110;
+        xOffset += 110; 
     }
   }
 }
