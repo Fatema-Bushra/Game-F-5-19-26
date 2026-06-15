@@ -1526,4 +1526,2311 @@ Java
         }
     }
 
+## 9
+create a high or low game using dice where when the user plays the first round, they are guessing if the result from the dice is going to be higher or lower than the number randomly generated (between 2-12) by the dealer (that's visible to the user), after that first round the result of the dice turns into the number that the user is going to continue guessing whether or not the new result of the dice will be higher or lower than it (so if the number the dealer has is 4, the result of the first round is 2, if the user continues playing, than they will be guessing if the new result from the dice is higher or lower than 2), ensure that the user can still bet and that the bet is visible to the user throughout the game until the results are in (then you say the amount either gained/lost/or given back to the user) --> if the user wins the round they get double the amount they put in as a bet, if the dice results in the same value as the value being compared to (trying to guess if the dice will be higher or lower than 2, but you get 2 with the dice) the user will get their bet returned to them, and if the user loses the round they will lose the amount they put in as a bet, make this a visual game using the images provided where the cup image starts the round being in the center of the user's screen, then after the user enters in their bet, the cup moves aside to reveal two dice with a value being displayed (so two of the dice images), ensure that there's a text displaying the calculated value of the dice with the images matching the value being displayed (the value should be no less than 2, but not greater than 12), ensure that the user can only bet positive numbers that is less or equal to their current balance
+
+generate necessary classes to accomplish this
+
+Here is the complete, refactored setup to transform your game into a High or Low Dice Game.
+
+We will structure this cleanly across two files: Game.java (handling the visual rendering, inputs, animations, and image assets using Processing) and a brand-new backend engine, DiceGame.java, which tracks your banking math, win conditions, and core rules.
+
+1. The Core Game View: Game.java
+This replaces your previous file. It manages typing your bets, animating the cup image away from the center when a round begins, displaying the matching pair of dice graphics, and controlling states.
+
+Java
+import processing.core.PApplet;
+import processing.core.PImage;
+import java.util.HashMap;
+
+public class Game extends PApplet {
+
+    public static final int APP_WIDTH = 800;
+    public static final int APP_HEIGHT = 600;
+
+    // --- Media Assets ---
+    PImage cupImage;
+    HashMap<Integer, PImage> diceImages;
+
+    // --- Backend Object ---
+    DiceGame backend;
+
+    // --- UI/Input States ---
+    String bettingInput = "";     
+    boolean enteringBet = true;   
+    char currentGuess = ' '; // 'H' for High, 'L' for Low
+    
+    // --- Animation Fields ---
+    float cupX, cupY;
+    float targetCupX, targetCupY;
+
+    @Override
+    public void settings() {
+        size(APP_WIDTH, APP_HEIGHT, JAVA2D);
+    }
+
+    @Override
+    public void setup() {
+        backend = new DiceGame(1000); // Start with $1000 balance
+        diceImages = new HashMap<>();
+
+        // Load provided PNG assets
+        cupImage = loadImage("cup.png");
+        diceImages.put(1, loadImage("oneSide.png"));
+        diceImages.put(2, loadImage("twoSide.png"));
+        diceImages.put(3, loadImage("threeSide.png"));
+        diceImages.put(4, loadImage("fourSide.png"));
+        diceImages.put(5, loadImage("fiveSide.png"));
+        diceImages.put(6, loadImage("sixSide.png"));
+
+        // Initialize cup position to the exact center of the screen
+        cupX = width / 2f;
+        cupY = height / 2f;
+        targetCupX = cupX;
+        targetCupY = cupY;
+    }
+
+    @Override
+    public void draw() {
+        background(20, 110, 50); // Classic felt green
+
+        // --- Smooth Cup Move Animation ---
+        cupX = lerp(cupX, targetCupX, 0.1f);
+        cupY = lerp(cupY, targetCupY, 0.1f);
+
+        // --- Persistent Top Bar Information ---
+        textSize(24);
+        fill(255);
+        text("Bankroll Balance: $" + backend.getBalance(), 50, 40);
+        text("Target Number to Beat: " + backend.getTargetValue(), 50, 80);
+
+        // --- Phase 1: Typing Wager Amount ---
+        if (enteringBet && backend.getBalance() > 0) {
+            fill(255, 255, 150);
+            textSize(24);
+            text("Type your bet amount: $" + bettingInput + "_", 50, 140);
+            
+            textSize(14);
+            fill(200);
+            text("Use digits [0-9], BACKSPACE to edit, ENTER to lock bet.", 50, 180);
+            text("Press 'R' at any time to reset profile.", 50, 200);
+            
+            // Bring cup back to center during betting phase
+            targetCupX = width / 2f;
+            targetCupY = height / 2f;
+        } 
+        // --- Phase 2: Choosing High or Low Guess ---
+        else if (!enteringBet && !backend.isRoundOver()) {
+            fill(255, 255, 150);
+            textSize(22);
+            text("Will the dice roll HIGHER or LOWER than " + backend.getTargetValue() + "?", 50, 140);
+            
+            textSize(18);
+            fill(255);
+            text("Press 'H' for HIGHER  |  Press 'L' for LOWER", 50, 180);
+            
+            fill(255, 215, 0); // Gold
+            text("Current Bet Locked: $" + backend.getCurrentBet(), 50, 220);
+
+            // Shove cup out of the center to reveal underneath slots
+            targetCupX = width - 150;
+            targetCupY = 150;
+        }
+        // --- Phase 3: Display Results ---
+        else if (backend.isRoundOver() && backend.getBalance() > 0) {
+            // Draw Outcome Text in center layout
+            textSize(28);
+            String msg = backend.getGameMessage();
+            if (msg.contains("Won")) fill(50, 255, 50);      // Green
+            else if (msg.contains("Returned")) fill(200);   // Gray
+            else fill(255, 50, 50);                         // Red
+            
+            text(msg, 50, 140);
+            
+            textSize(16);
+            fill(255);
+            text("Press ENTER to transition your target value and bet again!", 50, 180);
+        }
+        // --- Phase 4: Bankruptcy ---
+        else if (backend.getBalance() <= 0) {
+            fill(255, 50, 50);
+            textSize(32);
+            text("BANKRUPT!", 50, 140);
+            textSize(18);
+            fill(255);
+            text("Press 'R' to wipe profile and claim a fresh $1000 balance.", 50, 180);
+        }
+
+        // --- DRAW DICE SLOTS ---
+        // Dice slots are drawn in the center, visible only when cup slides aside
+        if (!enteringBet) {
+            drawDiceVisuals(width / 2 - 110, height / 2 - 50);
+        }
+
+        // --- DRAW THE CUP ASSET ---
+        if (cupImage != null) {
+            imageMode(CENTER);
+            image(cupImage, cupX, cupY, 180, 180);
+            imageMode(CORNER); // Reset default positioning mode
+        } else {
+            // Backup square visual asset if cup file is missing
+            fill(30, 30, 30, 220);
+            rectMode(CENTER);
+            rect(cupX, cupY, 140, 140, 15);
+            rectMode(CORNER);
+        }
+    }
+
+    /**
+     * Renders both dice images Side-by-Side and prints the combined total score underneath
+     */
+    private void drawDiceVisuals(float startX, float startY) {
+        int d1 = backend.getDie1();
+        int d2 = backend.getDie2();
+
+        PImage img1 = diceImages.get(d1);
+        PImage img2 = diceImages.get(d2);
+
+        // Render Die 1
+        if (img1 != null) {
+            image(img1, startX, startY, 100, 100);
+        } else {
+            fill(255); rect(startX, startY, 100, 100, 10);
+            fill(0); textSize(20); text(d1, startX + 40, startY + 55);
+        }
+
+        // Render Die 2
+        if (img2 != null) {
+            image(img2, startX + 120, startY, 100, 100);
+        } else {
+            fill(255); rect(startX + 120, startY, 100, 100, 10);
+            fill(0); textSize(20); text(d2, startX + 160, startY + 55);
+        }
+
+        // Total Dice value text overlay below images
+        fill(255);
+        textSize(22);
+        textAlign(CENTER);
+        text("Dice Total: " + (d1 + d2), startX + 110, startY + 140);
+        textAlign(LEFT);
+    }
+
+    @Override
+    public void keyPressed() {
+        // Master Reset Catch Rule
+        if (key == 'r' || key == 'R') {
+            backend = new DiceGame(1000);
+            bettingInput = "";
+            enteringBet = true;
+            return;
+        }
+
+        // --- Key handler: Placing Wager Mode ---
+        if (enteringBet) {
+            if (key >= '0' && key <= '9') {
+                bettingInput += key;
+            } 
+            else if (key == BACKSPACE && bettingInput.length() > 0) {
+                bettingInput = bettingInput.substring(0, bettingInput.length() - 1);
+            } 
+            else if (key == ENTER || key == RETURN) {
+                if (bettingInput.length() > 0) {
+                    int betAmount = Integer.parseInt(bettingInput);
+                    // Input Validation Check
+                    if (backend.lockBet(betAmount)) {
+                        enteringBet = false; 
+                    } else {
+                        bettingInput = ""; // Clear out input fields on error
+                    }
+                }
+            }
+        } 
+        // --- Key handler: Choosing Direction ---
+        else if (!backend.isRoundOver()) {
+            if (key == 'h' || key == 'H') {
+                backend.playRound(true); // Guess High
+            } 
+            else if (key == 'l' || key == 'L') {
+                backend.playRound(false); // Guess Low
+            }
+        } 
+        // --- Key handler: Processing Results Phase ---
+        else {
+            if (key == ENTER || key == RETURN) {
+                backend.prepareNextRound();
+                bettingInput = "";
+                enteringBet = true;
+            }
+        }
+    }
+}
+2. The Logic Architecture: DiceGame.java
+This class acts as your isolated calculations core module. It calculates rolls, verifies that bets do not exceed balances, handles the changing targets from round to round, and processes payout rules.
+
+Java
+import java.util.Random;
+
+public class DiceGame {
+
+    private int balance;
+    private int currentBet;
+    private int targetValue;
+    
+    private int die1;
+    private int die2;
+    
+    private String gameMessage;
+    private boolean isRoundOver;
+    private Random rand;
+
+    public DiceGame(int startingBalance) {
+        this.balance = startingBalance;
+        this.rand = new Random();
+        this.isRoundOver = true;
+        this.gameMessage = "Enter your bet amount to start!";
+        
+        // Setup initial dealer seed value between [2-12]
+        this.targetValue = rand.nextInt(11) + 2;
+        
+        // Default placeholders for images
+        this.die1 = 1;
+        this.die2 = 1;
+    }
+
+    /**
+     * Validates and locks in player bet amount.
+     * Checks if positive and lower than or equal to balance.
+     */
+    public boolean lockBet(int bet) {
+        if (bet <= 0 || bet > balance) {
+            gameMessage = "Invalid Bet! Check your bank balance.";
+            return false;
+        }
+        this.currentBet = bet;
+        this.isRoundOver = false;
+        return true;
+    }
+
+    /**
+     * Executes the dice logic calculation 
+     * @param guessHigh True if player guessed higher, false if low
+     */
+    public void playRound(boolean guessHigh) {
+        // Roll two separate dice items
+        this.die1 = rand.nextInt(6) + 1;
+        this.die2 = rand.nextInt(6) + 1;
+        int totalRoll = die1 + die2;
+
+        // Rule Case A: Push condition (Equal values)
+        if (totalRoll == targetValue) {
+            gameMessage = "Push! Dice matched target value. Bet Returned.";
+            isRoundOver = true;
+        }
+        // Rule Case B: Player Guess Win Condition (Double Bet Payout)
+        else if ((guessHigh && totalRoll > targetValue) || (!guessHigh && totalRoll < targetValue)) {
+            int netWin = currentBet * 2;
+            balance += netWin;
+            gameMessage = "You Won! Payout added: +$" + netWin;
+            isRoundOver = true;
+        }
+        // Rule Case C: Failure State (Lose Bet)
+        else {
+            balance -= currentBet;
+            gameMessage = "You Lost! Amount Deducted: -$" + currentBet;
+            isRoundOver = true;
+        }
+    }
+
+    /**
+     * Shifts the current dice roll total to be the next target benchmark
+     */
+    public void prepareNextRound() {
+        if (balance > 0) {
+            this.targetValue = die1 + die2;
+        }
+    }
+
+    // --- State Getters ---
+    public int getBalance() { return balance; }
+    public int getCurrentBet() { return currentBet; }
+    public int getTargetValue() { return targetValue; }
+    public int getDie1() { return die1; }
+    public int getDie2() { return die2; }
+    public String getGameMessage() { return gameMessage; }
+    public boolean isRoundOver() { return isRoundOver; }
+}
+
+## 10
+make it so that the high or low game exists in parallel to the blackjack game with only the user's balance transferring if the user plays between both games 
+
+To allow both games to exist in parallel while sharing a synchronized, single source of truth for the player's bankroll balance, we can refactor the architecture into three components:
+
+BankAccount.java: A shared object instance that stores the unified balance. Both backend engines will mutate this object directly so any gains or losses transfer instantly.
+
+DiceGame.java: Modifies the dice mechanics to accept the reference of our shared wallet.
+
+Game.java: Acts as a state controller, rendering user interface elements and switching back-and-forth between the games using the keyboard ('1' for Blackjack, '2' for High-Low Dice).
+
+Here is the implementation across the updated and new classes:
+
+1. The Shared State Wrapper: BankAccount.java
+Create this new class to hold the balance reference shared across both games.
+
+Java
+public class BankAccount {
+    private int balance;
+
+    public BankAccount(int startingBalance) {
+        this.balance = startingBalance;
+    }
+
+    public int getBalance() {
+        return this.balance;
+    }
+
+    public void deposit(int amount) {
+        if (amount > 0) {
+            this.balance += amount;
+        }
+    }
+
+    public void withdraw(int amount) {
+        if (amount > 0 && amount <= this.balance) {
+            this.balance -= amount;
+        }
+    }
+}
+2. The Refactored Backend Logic: DiceGame.java
+Update your dice module to bind to the mutual BankAccount engine state instead of carrying an isolated balance variable.
+
+Java
+import java.util.Random;
+
+public class DiceGame {
+
+    private BankAccount account; // Direct reference to shared balance
+    private int currentBet;
+    private int targetValue;
+    
+    private int die1;
+    private int die2;
+    
+    private String gameMessage;
+    private boolean isRoundOver;
+    private Random rand;
+
+    public DiceGame(BankAccount account) {
+        this.account = account;
+        this.rand = new Random();
+        this.isRoundOver = true;
+        this.gameMessage = "Enter your bet amount to start!";
+        
+        // Setup initial dealer seed value between [2-12]
+        this.targetValue = rand.nextInt(11) + 2;
+        
+        // Default placeholders for images
+        this.die1 = 1;
+        this.die2 = 1;
+    }
+
+    public boolean lockBet(int bet) {
+        if (bet <= 0 || bet > account.getBalance()) {
+            gameMessage = "Invalid Bet! Check your bank balance.";
+            return false;
+        }
+        this.currentBet = bet;
+        this.isRoundOver = false;
+        return true;
+    }
+
+    public void playRound(boolean guessHigh) {
+        this.die1 = rand.nextInt(6) + 1;
+        this.die2 = rand.nextInt(6) + 1;
+        int totalRoll = die1 + die2;
+
+        // Rule Case A: Push condition (Equal values)
+        if (totalRoll == targetValue) {
+            gameMessage = "Push! Dice matched target value. Bet Returned.";
+            isRoundOver = true;
+        }
+        // Rule Case B: Player Guess Win Condition (Double Bet Payout)
+        else if ((guessHigh && totalRoll > targetValue) || (!guessHigh && totalRoll < targetValue)) {
+            int netWin = currentBet * 2;
+            account.deposit(netWin);
+            gameMessage = "You Won! Payout added: +$" + netWin;
+            isRoundOver = true;
+        }
+        // Rule Case C: Failure State (Lose Bet)
+        else {
+            account.withdraw(currentBet);
+            gameMessage = "You Lost! Amount Deducted: -$" + currentBet;
+            isRoundOver = true;
+        }
+    }
+
+    public void prepareNextRound() {
+        if (account.getBalance() > 0) {
+            this.targetValue = die1 + die2;
+        }
+    }
+
+    // --- State Getters ---
+    public int getBalance() { return account.getBalance(); }
+    public int getCurrentBet() { return currentBet; }
+    public int getTargetValue() { return targetValue; }
+    public int getDie1() { return die1; }
+    public int getDie2() { return die2; }
+    public String getGameMessage() { return gameMessage; }
+    public boolean isRoundOver() { return isRoundOver; }
+}
+(Note: You will want to apply a similar adjustment to your Blackjack.java class constructor to take a BankAccount account parameter and replace internal balance modifications with account.deposit() and account.withdraw() calls).
+
+3. Integrated Controller: Game.java
+This script handles rendering updates dynamically depending on the selected mode. It preserves the graphical animations and user-input fields safely for both game instances.
+
+Java
+import processing.core.PApplet;
+import processing.core.PImage;
+import java.util.HashMap;
+
+public class Game extends PApplet {
+
+    public static final int APP_WIDTH = 800;
+    public static final int APP_HEIGHT = 600;
+
+    // --- Global Game Mode Engine State ---
+    // 1 = Blackjack, 2 = High-Low Dice Game
+    int gameMode = 1; 
+
+    // --- Shared Bank System ---
+    BankAccount sharedAccount;
+
+    // --- Backend References ---
+    Blackjack blackjackBackend;
+    DiceGame diceBackend;
+
+    // --- Graphical Media Assets ---
+    PImage cupImage;
+    HashMap<Integer, PImage> diceImages;
+    // (Incorporate your existing blackjack card assets field mappings here)
+
+    // --- Shared Input Variables ---
+    String bettingInput = "";     
+    boolean enteringBet = true;   
+    
+    // --- Dice Animation Fields ---
+    float cupX, cupY;
+    float targetCupX, targetCupY;
+
+    @Override
+    public void settings() {
+        size(APP_WIDTH, APP_HEIGHT, JAVA2D);
+    }
+
+    @Override
+    public void setup() {
+        // 1. Initialize centralized tracking wallet
+        sharedAccount = new BankAccount(1000); 
+
+        // 2. Instantiate both games passing the shared wallet instance
+        blackjackBackend = new Blackjack(sharedAccount); 
+        diceBackend = new DiceGame(sharedAccount);
+
+        // 3. Load Assets
+        diceImages = new HashMap<>();
+        cupImage = loadImage("cup.png");
+        diceImages.put(1, loadImage("oneSide.png"));
+        diceImages.put(2, loadImage("twoSide.png"));
+        diceImages.put(3, loadImage("threeSide.png"));
+        diceImages.put(4, loadImage("fourSide.png"));
+        diceImages.put(5, loadImage("fiveSide.png"));
+        diceImages.put(6, loadImage("sixSide.png"));
+
+        // Setup asset variables
+        cupX = width / 2f;
+        cupY = height / 2f;
+        targetCupX = cupX;
+        targetCupY = cupY;
+    }
+
+    @Override
+    public void draw() {
+        // Render common table environment
+        background(20, 110, 50); 
+
+        // Draw Shared HUD Controls Top Bar
+        drawGlobalHeader();
+
+        if (sharedAccount.getBalance() <= 0) {
+            drawBankruptcyScreen();
+            return;
+        }
+
+        // --- Render Based on Selected Mode ---
+        if (gameMode == 1) {
+            drawBlackjackScreen();
+        } else if (gameMode == 2) {
+            drawDiceScreen();
+        }
+    }
+
+    private void drawGlobalHeader() {
+        fill(0, 50);
+        rect(0, 0, width, 60);
+        fill(255);
+        textSize(16);
+        text("SHARED BANK BALANCE: $" + sharedAccount.getBalance(), 20, 35);
+        
+        // Mode indicator configuration
+        textAlign(RIGHT);
+        fill(gameMode == 1 ? color(255, 215, 0) : 200);
+        text("[Press 1] Blackjack Table", width - 240, 35);
+        fill(gameMode == 2 ? color(255, 215, 0) : 200);
+        text("[Press 2] High-Low Dice", width - 40, 35);
+        textAlign(LEFT);
+    }
+
+    private void drawBlackjackScreen() {
+        fill(255);
+        textSize(22);
+        text("Blackjack Table Room", 50, 100);
+        
+        // Render implementation hook using layout rules from your original design
+        textSize(16);
+        if (enteringBet) {
+            text("Type your Blackjack bet: $" + bettingInput + "_", 50, 150);
+        } else {
+            text("Game Message: " + blackjackBackend.getGameMessage(), 50, 150);
+            // Include your standard card layout rendering methods here
+        }
+    }
+
+    private void drawDiceScreen() {
+        // --- Smooth Cup Move Animation Calculations ---
+        cupX = lerp(cupX, targetCupX, 0.1f);
+        cupY = lerp(cupY, targetCupY, 0.1f);
+
+        textSize(22);
+        fill(255);
+        text("Target Number to Beat: " + diceBackend.getTargetValue(), 50, 100);
+
+        if (enteringBet) {
+            fill(255, 255, 150);
+            text("Type your High-Low bet: $" + bettingInput + "_", 50, 150);
+            targetCupX = width / 2f;
+            targetCupY = height / 2f;
+        } 
+        else if (!enteringBet && !diceBackend.isRoundOver()) {
+            fill(255, 255, 150);
+            text("Will dice roll HIGHER or LOWER than " + diceBackend.getTargetValue() + "?", 50, 150);
+            textSize(16);
+            fill(255);
+            text("Press 'H' for HIGHER  |  Press 'L' for LOWER", 50, 190);
+            text("Current Locked Wager: $" + diceBackend.getCurrentBet(), 50, 220);
+            
+            targetCupX = width - 150;
+            targetCupY = 150;
+        } 
+        else if (diceBackend.isRoundOver()) {
+            String msg = diceBackend.getGameMessage();
+            if (msg.contains("Won")) fill(50, 255, 50);
+            else if (msg.contains("Returned")) fill(200);
+            else fill(255, 50, 50);
+            
+            text(msg, 50, 150);
+            textSize(16);
+            fill(255);
+            text("Press ENTER to transition target and clear room.", 50, 190);
+        }
+
+        // Draw active dice slots under the cup
+        if (!enteringBet) {
+            drawDiceVisuals(width / 2 - 110, height / 2 - 50);
+        }
+
+        // Draw Cup
+        if (cupImage != null) {
+            imageMode(CENTER);
+            image(cupImage, cupX, cupY, 180, 180);
+            imageMode(CORNER);
+        }
+    }
+
+    private void drawDiceVisuals(float startX, float startY) {
+        int d1 = diceBackend.getDie1();
+        int d2 = diceBackend.getDie2();
+        PImage img1 = diceImages.get(d1);
+        PImage img2 = diceImages.get(d2);
+
+        if (img1 != null) image(img1, startX, startY, 100, 100);
+        if (img2 != null) image(img2, startX + 120, startY, 100, 100);
+
+        fill(255);
+        textSize(22);
+        textAlign(CENTER);
+        text("Dice Total: " + (d1 + d2), startX + 110, startY + 140);
+        textAlign(LEFT);
+    }
+
+    private void drawBankruptcyScreen() {
+        fill(255, 50, 50);
+        textSize(32);
+        text("BANKRUPT!", width / 2 - 100, height / 2 - 20);
+        textSize(18);
+        fill(255);
+        text("Press 'R' to clear tables and acquire fresh $1000 credit profile.", width / 2 - 240, height / 2 + 30);
+    }
+
+    @Override
+    public void keyPressed() {
+        // Universal Reset Profile Key
+        if (key == 'r' || key == 'R') {
+            sharedAccount = new BankAccount(1000);
+            blackjackBackend = new Blackjack(sharedAccount);
+            diceBackend = new DiceGame(sharedAccount);
+            bettingInput = "";
+            enteringBet = true;
+            return;
+        }
+
+        // --- Room Intercept Switches ---
+        if (key == '1') {
+            gameMode = 1;
+            bettingInput = "";
+            enteringBet = true;
+            return;
+        }
+        if (key == '2') {
+            gameMode = 2;
+            bettingInput = "";
+            enteringBet = true;
+            return;
+        }
+
+        // --- Context Inputs Routing ---
+        if (gameMode == 1) {
+            handleBlackjackInput();
+        } else if (gameMode == 2) {
+            handleDiceInput();
+        }
+    }
+
+    private void handleBlackjackInput() {
+        if (enteringBet) {
+            if (key >= '0' && key <= '9') bettingInput += key;
+            else if (key == BACKSPACE && bettingInput.length() > 0) bettingInput = bettingInput.substring(0, bettingInput.length() - 1);
+            else if (key == ENTER || key == RETURN) {
+                if (bettingInput.length() > 0) {
+                    int bet = Integer.parseInt(bettingInput);
+                    if (blackjackBackend.startRound(bet)) { // Modified backend interaction
+                        enteringBet = false;
+                    } else {
+                        bettingInput = "";
+                    }
+                }
+            }
+        } else {
+            // Include your standard blackjack keyboard bindings (e.g., Hit/Stand logic) here
+        }
+    }
+
+    private void handleDiceInput() {
+        if (enteringBet) {
+            if (key >= '0' && key <= '9') bettingInput += key;
+            else if (key == BACKSPACE && bettingInput.length() > 0) bettingInput = bettingInput.substring(0, bettingInput.length() - 1);
+            else if (key == ENTER || key == RETURN) {
+                if (bettingInput.length() > 0) {
+                    int bet = Integer.parseInt(bettingInput);
+                    if (diceBackend.lockBet(bet)) {
+                        enteringBet = false;
+                    } else {
+                        bettingInput = "";
+                    }
+                }
+            }
+        } 
+        else if (!diceBackend.isRoundOver()) {
+            if (key == 'h' || key == 'H') diceBackend.playRound(true);
+            else if (key == 'l' || key == 'L') diceBackend.playRound(false);
+        } 
+        else {
+            if (key == ENTER || key == RETURN) {
+                diceBackend.prepareNextRound();
+                bettingInput = "";
+                enteringBet = true;
+            }
+        }
+    }
+}
+
+## 11
+make the needed changes to the blackjack class
+
+To successfully integrate your Blackjack game with the new parallel model, we need to adapt it to use the shared BankAccount reference instead of managing its own isolated balance field or a separate Player banking account object.
+
+Here is the fully modified Blackjack.java class, updated to share the universal BankAccount instance:
+
+Java
+public class Blackjack {
+
+    // --- Fields to keep track of the current game state ---
+    private BankAccount account; // Reference to the shared bank account
+    private Hand dealerHand;
+    private Deck deck;
+    private int currentBet;
+    private String gameMessage;
+    private boolean isRoundOver;
+    private Hand playerHand; // Tracks cards for the player's active hand
+
+    /**
+     * Constructor accepts the central shared BankAccount object instance
+     */
+    public Blackjack(BankAccount account) {
+        this.account = account;
+        this.playerHand = new Hand();
+        this.dealerHand = new Hand();
+        this.gameMessage = "Place your bet to begin!";
+        this.isRoundOver = true; // Ready for a new round
+    }
+
+    // --- Core Methods for the Game Class to use ---
+
+    /**
+     * Starts a brand new round of Blackjack with a specified bet.
+     * @param bet The amount the player wants to wager
+     * @return boolean True if the bet was valid and round started, false otherwise
+     */
+    public boolean startRound(int bet) {
+        if (bet > account.getBalance() || bet <= 0) {
+            gameMessage = "Invalid bet amount.";
+            return false;
+        }
+
+        this.currentBet = bet;
+        this.deck = new Deck();
+        
+        // Reset hands for a fresh round
+        this.playerHand = new Hand();
+        this.dealerHand = new Hand();
+        this.isRoundOver = false;
+
+        // Deal initial 2 cards to each
+        playerHand.addCard(deck.drawCard());
+        dealerHand.addCard(deck.drawCard());
+        playerHand.addCard(deck.drawCard());
+        dealerHand.addCard(deck.drawCard());
+
+        gameMessage = "Hit or Stand?";
+        return true;
+    }
+
+    /**
+     * Player requests another card.
+     */
+    public void hit() {
+        if (isRoundOver) return;
+
+        playerHand.addCard(deck.drawCard());
+
+        if (playerHand.isBust()) {
+            gameMessage = "You busted! Dealer wins.";
+            account.withdraw(currentBet); // Deduct bet immediately on bust
+            isRoundOver = true;
+        }
+    }
+
+    /**
+     * Player stands. The dealer plays out their hand, and winners are determined.
+     */
+    public void stand() {
+        if (isRoundOver) return;
+
+        // Dealer hits until hitting 17 or higher
+        while (dealerHand.getValue() < 17) {
+            dealerHand.addCard(deck.drawCard());
+        }
+
+        evaluateWinners();
+    }
+
+    /**
+     * Contains the outcome comparison logic connected to the shared BankAccount
+     */
+    private void evaluateWinners() {
+        isRoundOver = true;
+
+        int playerTotal = playerHand.getValue();
+        int dealerTotal = dealerHand.getValue();
+        boolean playerNatural = playerHand.isNatural21();
+        boolean dealerNatural = dealerHand.isNatural21();
+        boolean playerMade21 = (playerTotal == 21 && !playerNatural);
+        boolean dealerMade21 = (dealerTotal == 21 && !dealerNatural);
+
+        if (playerHand.isBust()) {
+            gameMessage = "You busted! Dealer wins.";
+            account.withdraw(currentBet);
+        } 
+        else if (dealerHand.isBust()) {
+            gameMessage = "Dealer busted! You win!";
+            account.deposit(currentBet * 2); // Net gain of double the bet payout
+        } 
+        else if (playerNatural && !dealerNatural) {
+            gameMessage = "Natural 21! You win!";
+            account.deposit(currentBet * 2);
+        } 
+        else if (dealerNatural && !playerNatural) {
+            gameMessage = "Dealer natural 21 wins.";
+            account.withdraw(currentBet);
+        } 
+        else if (playerNatural && dealerNatural) {
+            gameMessage = "Tie! Both got Natural 21."; // Push: money returns, no change
+        } 
+        else if (playerMade21 && dealerMade21) {
+            gameMessage = "Tie! Both made 21."; // Push: money returns, no change
+        } 
+        else if (playerTotal > dealerTotal) {
+            gameMessage = "You win!";
+            account.deposit(currentBet * 2);
+        } 
+        else if (playerTotal < dealerTotal) {
+            gameMessage = "Dealer wins.";
+            account.withdraw(currentBet);
+        } 
+        else {
+            gameMessage = "Push (Tie).";
+        }
+    }
+
+    // --- Getters to allow Game.java to read the current state for drawing ---
+
+    public Hand getPlayerHand() { return playerHand; }
+    public Hand getDealerHand() { return dealerHand; }
+    public String getGameMessage() { return gameMessage; }
+    public boolean isRoundOver() { return isRoundOver; }
+    public int getBalance() { return account.getBalance(); }
+    public int getCurrentBet() { return currentBet; }
+}
+What changed?
+Removed Player Class Dependency: The internal state tracking inside your custom Player class wrapper has been cleaned up. The monetary portion now routes through BankAccount, and the active card list is now handled seamlessly inside the local playerHand instance variable.
+
+Synchronized Money Influx/Deflux: player.winBet(...) and player.loseBet(...) expressions have been updated to direct account.deposit(...) and account.withdraw(...) mutations on the unified bank balance. This ensures that any chips won or lost at the Blackjack table are immediately updated when transitioning to High-Low Dice.
+
+## 12 
+update the player class
+
+Here is the updated Player.java class.
+
+To maintain clean object-oriented design and ensure compatibility with the updated Blackjack logic, we remove the isolated balance field and its direct banking methods from this class. Instead, the Player is initialized with a reference to the shared BankAccount object so that card actions can remain separate from the centralized monetary tracking.
+
+Java
+public class Player {
+
+    private Hand hand;
+    private BankAccount account; // Reference to the centralized bank account
+
+    /**
+     * Constructor links the player to their hand and the shared financial account
+     */
+    public Player(BankAccount account) {
+        this.hand = new Hand();
+        this.account = account;
+    }
+
+    /**
+     * Retrieves the current hand of cards for rendering or logic evaluation
+     */
+    public Hand getHand() {
+        return this.hand;
+    }
+
+    /**
+     * Helper method to seamlessly fetch the synchronized balance from the shared account
+     */
+    public int getBalance() {
+        return this.account.getBalance();
+    }
+
+    /**
+     * Resets the player's cards for a brand-new round of dealing
+     */
+    public void resetHand() {
+        this.hand = new Hand();
+    }
+}
+Key Refactoring Details
+Single Source of Truth: Removed the local balance primitive variable, preventing bugs where one game updates its balance while the other remains unchanged.
+
+Delegated Banking: The responsibility for adjusting capital has been moved out of this class. The Blackjack backend now handles direct calls via account.deposit() and account.withdraw(), mirroring the behavior of the DiceGame engine.
+
+## 13 
+make it two seperate screens so that the blackjack game is like how it was before  the chaneg
+
+To keep both games running smoothly side-by-side with a synchronized balance, we can fully integrate them into your Game.java file using a simple gameMode state variable.
+
+By utilizing your original visual layout for Blackjack exactly as it was, and switching over to the complete High-Low Dice graphics when requested, you get the best of both worlds.
+
+Here is the updated, unified Game.java class that matches your original code structure while adding the parallel dice mode.
+
+Java
+import processing.core.PApplet;
+import processing.core.PImage;
+import java.util.HashMap;
+
+public class Game extends PApplet {
+
+  // --- Visual Layout Fields ---
+  HashMap<String, PImage> cardImages;
+  PImage backOfCardImage;
+  
+  // --- High-Low Dice Assets ---
+  PImage cupImage;
+  HashMap<Integer, PImage> diceImages;
+
+  PApplet p;
+  public static final int APP_WIDTH = 800;
+  public static final int APP_HEIGHT = 600;
+
+  // --- Shared Bank Roll System ---
+  BankAccount sharedAccount;
+
+  // --- Parallel Backend Engine Objects ---
+  Blackjack blackjack;
+  DiceGame diceGame;
+  
+  // --- Global State Controller ---
+  // 1 = Original Blackjack Screen, 2 = High-Low Dice Screen
+  int gameMode = 1; 
+
+  // --- Input State Fields ---
+  String bettingInput = "";     // Temporarily holds the numbers the player types
+  boolean enteringBet = true;   // Tracks if the player is currently typing a bet
+  
+  // --- Cup Animation Fields ---
+  float cupX, cupY;
+  float targetCupX, targetCupY;
+
+  @Override
+  public void settings() {
+    size(APP_WIDTH, APP_HEIGHT, JAVA2D);
+    p = this;
+  }
+
+  @Override
+  public void setup() {
+    // 1. Initialize centralized tracking wallet
+    sharedAccount = new BankAccount(1000);
+
+    // 2. Instantiate backends passing the shared wallet instance
+    blackjack = new Blackjack(sharedAccount);
+    diceGame = new DiceGame(sharedAccount);
+    
+    // 3. Load Blackjack Card Assets
+    cardImages = new HashMap<String, PImage>();
+    backOfCardImage = loadImage("images/cardBack.png"); 
+
+    String[] suits = {"Hearts", "Diamonds", "Clubs", "Spades"};
+    String[] ranks = {"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"};
+
+    for (String suit : suits) {
+        for (String rank : ranks) {
+            String fileName = "images/" + rank + "_of_" + suit + ".png"; 
+            PImage img = loadImage(fileName);
+            if (img != null) {
+                cardImages.put(rank + suit, img);
+            }
+        }
+    }
+    
+    // 4. Load High-Low Dice Assets
+    diceImages = new HashMap<Integer, PImage>();
+    cupImage = loadImage("cup.png");
+    diceImages.put(1, loadImage("oneSide.png"));
+    diceImages.put(2, loadImage("twoSide.png"));
+    diceImages.put(3, loadImage("threeSide.png"));
+    diceImages.put(4, loadImage("fourSide.png"));
+    diceImages.put(5, loadImage("fiveSide.png"));
+    diceImages.put(6, loadImage("sixSide.png"));
+
+    // Default cup positions
+    cupX = width / 2f;
+    cupY = height / 2f;
+    targetCupX = cupX;
+    targetCupY = cupY;
+  }
+
+  @Override
+  public void draw() {
+    background(20, 110, 50); // Poker room green felt
+    
+    // Draw Global Persistent Game Selector Header
+    drawGlobalHeader();
+    
+    // Global Bankruptcy Check
+    if (sharedAccount.getBalance() <= 0 && ((gameMode == 1 && blackjack.isRoundOver()) || (gameMode == 2 && diceGame.isRoundOver()))) {
+        drawBankruptcyScreen();
+        return;
+    }
+
+    // --- Screen Router ---
+    if (gameMode == 1) {
+        drawOriginalBlackjackScreen();
+    } else if (gameMode == 2) {
+        drawDiceScreen();
+    }
+  }
+
+  private void drawGlobalHeader() {
+    fill(0, 75);
+    rect(0, 0, width, 45);
+    fill(255);
+    textSize(14);
+    text("WALLET BALANCE: $" + sharedAccount.getBalance(), 20, 28);
+    
+    textAlign(RIGHT);
+    fill(gameMode == 1 ? color(255, 215, 0) : 180);
+    text("[Press 1] Blackjack Table", width - 220, 28);
+    fill(gameMode == 2 ? color(255, 215, 0) : 180);
+    text("[Press 2] High-Low Dice", width - 30, 28);
+    textAlign(LEFT);
+  }
+
+  /**
+   * Screen 1: Original Blackjack Layout
+   */
+  private void drawOriginalBlackjackScreen() {
+    textSize(24);
+    fill(255);
+    text("Bankroll Balance: $" + blackjack.getBalance(), 50, 80);
+    text("Status: " + blackjack.getGameMessage(), 50, 120);
+    
+    // Draw Deck Stack
+    int deckX = 650;
+    int deckY = 80;
+    if (backOfCardImage != null) {
+        image(backOfCardImage, deckX + 4, deckY + 4, 90, 130);
+        image(backOfCardImage, deckX + 2, deckY + 2, 90, 130);
+        image(backOfCardImage, deckX, deckY, 90, 130);
+    } else {
+        fill(40, 40, 40);
+        rect(deckX, deckY, 90, 130, 5);
+    }
+
+    // Phase 1: Betting Mode
+    if (enteringBet) {
+        fill(255, 255, 150);
+        textSize(24);
+        text("Type your blackjack bet: $" + bettingInput + "_", 50, 180);
+        textSize(14);
+        fill(200);
+        text("Type digits [0-9], BACKSPACE to edit, ENTER to confirm deal.", 50, 220);
+    }
+    
+    // Phase 2: Active Hands Table Environment
+    if (!blackjack.getPlayer().getHand().getCards().isEmpty()) {
+        // Dealer Region
+        fill(255);
+        textSize(18);
+        if (blackjack.isRoundOver()) {
+            text("Dealer Hand (Total: " + blackjack.getDealerHand().getValue() + ")", 50, 250);
+        } else {
+            text("Dealer Hand (Showing Card value)", 50, 250);
+        }
+        drawHandVisuals(blackjack.getDealerHand(), 50, 270, true);
+        
+        // Player Region
+        fill(255);
+        textSize(18);
+        text("Your Hand (Total: " + blackjack.getPlayer().getHand().getValue() + ")", 50, 420);
+        drawHandVisuals(blackjack.getPlayer().getHand(), 50, 440, false);
+        
+        // Bet & Outcome Status displays
+        textSize(24);
+        textAlign(CENTER);
+        if (!blackjack.isRoundOver()) {
+            fill(255, 215, 0); 
+            text("Current Bet: $" + blackjack.getCurrentBet(), width - 150, height - 100);
+            fill(255, 255, 150);
+            textSize(16);
+            text("Press 'H' to Hit\nPress 'S' to Stand", width - 150, height - 60);
+        } else {
+            String outcomeMsg = blackjack.getGameMessage();
+            if (outcomeMsg.contains("You win") || outcomeMsg.contains("win!")) {
+                fill(50, 255, 50);
+                text("Amount Won: +$" + blackjack.getCurrentBet(), width - 150, height - 80);
+            } else if (outcomeMsg.contains("Tie") || outcomeMsg.contains("Push")) {
+                fill(200);
+                text("Push: No Change", width - 150, height - 80);
+            } else {
+                fill(255, 50, 50);
+                text("Amount Lost: -$" + blackjack.getCurrentBet(), width - 150, height - 80);
+            }
+            fill(255);
+            textSize(14);
+            text("Press ENTER to play again", width - 150, height - 40);
+        }
+        textAlign(LEFT);
+    }
+  }
+
+  /**
+   * Screen 2: High or Low Dice Layout
+   */
+  private void drawDiceScreen() {
+    cupX = lerp(cupX, targetCupX, 0.1f);
+    cupY = lerp(cupY, targetCupY, 0.1f);
+
+    textSize(24);
+    fill(255);
+    text("Dice Room Target Value: " + diceGame.getTargetValue(), 50, 80);
+
+    if (enteringBet) {
+        fill(255, 255, 150);
+        text("Type your High-Low bet: $" + bettingInput + "_", 50, 150);
+        targetCupX = width / 2f;
+        targetCupY = height / 2f;
+    } 
+    else if (!enteringBet && !diceGame.isRoundOver()) {
+        fill(255, 255, 150);
+        text("Will dice roll HIGHER or LOWER than " + diceGame.getTargetValue() + "?", 50, 140);
+        textSize(16);
+        fill(255);
+        text("Press 'H' for HIGHER  |  Press 'L' for LOWER", 50, 180);
+        fill(255, 215, 0);
+        text("Current Bet Locked: $" + diceGame.getCurrentBet(), 50, 210);
+        
+        targetCupX = width - 120;
+        targetCupY = 160;
+    } 
+    else if (diceGame.isRoundOver()) {
+        String msg = diceGame.getGameMessage();
+        if (msg.contains("Won")) fill(50, 255, 50);
+        else if (msg.contains("Returned") || msg.contains("Push")) fill(200);
+        else fill(255, 50, 50);
+        
+        text(msg, 50, 140);
+        textSize(16);
+        fill(255);
+        text("Press ENTER to change target benchmark and continue.", 50, 180);
+    }
+
+    // Reveal hidden dice underlying layout slot area
+    if (!enteringBet) {
+        drawDiceVisuals(width / 2 - 110, height / 2 - 40);
+    }
+
+    // Draw Shaking Cup Overlay
+    if (cupImage != null) {
+        imageMode(CENTER);
+        image(cupImage, cupX, cupY, 180, 180);
+        imageMode(CORNER);
+    }
+  }
+
+  private void drawDiceVisuals(float startX, float startY) {
+    int d1 = diceGame.getDie1();
+    int d2 = diceGame.getDie2();
+    PImage img1 = diceImages.get(d1);
+    PImage img2 = diceImages.get(d2);
+
+    if (img1 != null) image(img1, startX, startY, 100, 100);
+    if (img2 != null) image(img2, startX + 120, startY, 100, 100);
+
+    fill(255);
+    textSize(22);
+    textAlign(CENTER);
+    text("Dice Total: " + (d1 + d2), startX + 110, startY + 135);
+    textAlign(LEFT);
+  }
+
+  private void drawBankruptcyScreen() {
+    fill(255, 50, 50);
+    textSize(32);
+    text("BANKRUPT!", 50, 140);
+    textSize(18);
+    fill(255);
+    text("Press 'R' to completely wipe profiles and claim a fresh $1000 credit line.", 50, 180);
+  }
+
+  @Override
+  public void keyPressed() {
+    // Global Profile Hard Reboot
+    if (key == 'r' || key == 'R') {
+        sharedAccount = new BankAccount(1000);
+        blackjack = new Blackjack(sharedAccount);
+        diceGame = new DiceGame(sharedAccount);
+        bettingInput = "";
+        enteringBet = true;
+        return;
+    }
+
+    // Menu Room Navigation Keys
+    if (key == '1' && (blackjack.isRoundOver() && diceGame.isRoundOver())) {
+        gameMode = 1;
+        bettingInput = "";
+        enteringBet = true;
+        return;
+    }
+    if (key == '2' && (blackjack.isRoundOver() && diceGame.isRoundOver())) {
+        gameMode = 2;
+        bettingInput = "";
+        enteringBet = true;
+        return;
+    }
+
+    // Route inputs down to sub-methods based on active room
+    if (gameMode == 1) {
+        handleBlackjackInput();
+    } else if (gameMode == 2) {
+        handleDiceInput();
+    }
+  }
+
+  private void handleBlackjackInput() {
+    if (enteringBet) {
+        if (key >= '0' && key <= '9') bettingInput += key;
+        else if (key == BACKSPACE && bettingInput.length() > 0) bettingInput = bettingInput.substring(0, bettingInput.length() - 1);
+        else if (key == ENTER || key == RETURN) {
+            if (bettingInput.length() > 0) {
+                int bet = Integer.parseInt(bettingInput);
+                if (blackjack.startRound(bet)) {
+                    enteringBet = false;
+                } else {
+                    bettingInput = "";
+                }
+            }
+        }
+    } else {
+        if (!blackjack.isRoundOver()) {
+            if (key == 'h' || key == 'H') blackjack.hit();
+            else if (key == 's' || key == 'S') blackjack.stand();
+        } else {
+            if (key == ENTER || key == RETURN) {
+                bettingInput = "";
+                enteringBet = true;
+            }
+        }
+    }
+  }
+
+  private void handleDiceInput() {
+    if (enteringBet) {
+        if (key >= '0' && key <= '9') bettingInput += key;
+        else if (key == BACKSPACE && bettingInput.length() > 0) bettingInput = bettingInput.substring(0, bettingInput.length() - 1);
+        else if (key == ENTER || key == RETURN) {
+            if (bettingInput.length() > 0) {
+                int bet = Integer.parseInt(bettingInput);
+                if (diceGame.lockBet(bet)) {
+                    enteringBet = false;
+                } else {
+                    bettingInput = "";
+                }
+            }
+        }
+    } 
+    else if (!diceGame.isRoundOver()) {
+        if (key == 'h' || key == 'H') diceGame.playRound(true);
+        else if (key == 'l' || key == 'L') diceGame.playRound(false);
+    } 
+    else {
+        if (key == ENTER || key == RETURN) {
+            diceGame.prepareNextRound();
+            bettingInput = "";
+            enteringBet = true;
+        }
+    }
+  }
+
+  public void drawHandVisuals(Hand hand, float startX, float startY, boolean hideFirstCard) {
+    float xOffset = 0;
+    int cardWidth = 90;   
+    int cardHeight = 130;
+
+    for (int i = 0; i < hand.getCards().size(); i++) {
+        Card card = hand.getCards().get(i);
+        String lookupKey = card.getRank() + card.getSuit();
+        PImage cardImg = cardImages.get(lookupKey);
+        float currentX = startX + xOffset;
+
+        if (i == 0 && hideFirstCard && !blackjack.isRoundOver()) {
+            if (backOfCardImage != null) image(backOfCardImage, currentX, startY, cardWidth, cardHeight);
+            else { fill(0, 0, 150); rect(currentX, startY, cardWidth, cardHeight, 5); }
+        } else {
+            if (cardImg != null) image(cardImg, currentX, startY, cardWidth, cardHeight);
+            else {
+                fill(255); stroke(0); rect(currentX, startY, cardWidth, cardHeight, 5);
+                fill(0); textSize(16); text(card.getRank() + "\n" + card.getSuit().substring(0,3), currentX + 10, startY + 30);
+            }
+        }
+        xOffset += 110; 
+    }
+  }
+}
+
+## 14
+change it so that to switch between high or low and blackjack the user clicks b (for blackjack) and d (for high or low)
+
+Here are the updated Game.java, Player.java, and Blackjack.java classes configured so that the two screens function exactly as they did originally, with the shared wallet switching smoothly when pressing B (for Blackjack) and D (for High or Low).
+
+1. The Controller Screen: Game.java
+This script updates the keyboard event handlers (keyPressed) to listen for 'b' and 'd' instead of numbers, while drawing the original Blackjack layout exactly how it was configured before.
+
+Java
+import processing.core.PApplet;
+import processing.core.PImage;
+import java.util.HashMap;
+
+public class Game extends PApplet {
+
+  // --- Visual Layout Fields ---
+  HashMap<String, PImage> cardImages;
+  PImage backOfCardImage;
+  
+  // --- High-Low Dice Assets ---
+  PImage cupImage;
+  HashMap<Integer, PImage> diceImages;
+
+  PApplet p;
+  public static final int APP_WIDTH = 800;
+  public static final int APP_HEIGHT = 600;
+
+  // --- Shared Bank Roll System ---
+  BankAccount sharedAccount;
+
+  // --- Parallel Backend Engine Objects ---
+  Blackjack blackjack;
+  DiceGame diceGame;
+  
+  // --- Global State Controller ---
+  // 1 = Original Blackjack Screen, 2 = High-Low Dice Screen
+  int gameMode = 1; 
+
+  // --- Input State Fields ---
+  String bettingInput = "";     // Temporarily holds the numbers the player types
+  boolean enteringBet = true;   // Tracks if the player is currently typing a bet
+  
+  // --- Cup Animation Fields ---
+  float cupX, cupY;
+  float targetCupX, targetCupY;
+
+  @Override
+  public void settings() {
+    size(APP_WIDTH, APP_HEIGHT, JAVA2D);
+    p = this;
+  }
+
+  @Override
+  public void setup() {
+    // 1. Initialize centralized tracking wallet
+    sharedAccount = new BankAccount(1000);
+
+    // 2. Instantiate backends passing the shared wallet instance
+    blackjack = new Blackjack(sharedAccount);
+    diceGame = new DiceGame(sharedAccount);
+    
+    // 3. Load Blackjack Card Assets
+    cardImages = new HashMap<String, PImage>();
+    backOfCardImage = loadImage("images/cardBack.png"); 
+
+    String[] suits = {"Hearts", "Diamonds", "Clubs", "Spades"};
+    String[] ranks = {"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"};
+
+    for (String suit : suits) {
+        for (String rank : ranks) {
+            String fileName = "images/" + rank + "_of_" + suit + ".png"; 
+            PImage img = loadImage(fileName);
+            if (img != null) {
+                cardImages.put(rank + suit, img);
+            }
+        }
+    }
+    
+    // 4. Load High-Low Dice Assets
+    diceImages = new HashMap<Integer, PImage>();
+    cupImage = loadImage("cup.png");
+    diceImages.put(1, loadImage("oneSide.png"));
+    diceImages.put(2, loadImage("twoSide.png"));
+    diceImages.put(3, loadImage("threeSide.png"));
+    diceImages.put(4, loadImage("fourSide.png"));
+    diceImages.put(5, loadImage("fiveSide.png"));
+    diceImages.put(6, loadImage("sixSide.png"));
+
+    // Default cup positions
+    cupX = width / 2f;
+    cupY = height / 2f;
+    targetCupX = cupX;
+    targetCupY = cupY;
+  }
+
+  @Override
+  public void draw() {
+    background(20, 110, 50); // Poker room green felt
+    
+    // Draw Global Persistent Game Selector Header
+    drawGlobalHeader();
+    
+    // Global Bankruptcy Check
+    if (sharedAccount.getBalance() <= 0 && ((gameMode == 1 && blackjack.isRoundOver()) || (gameMode == 2 && diceGame.isRoundOver()))) {
+        drawBankruptcyScreen();
+        return;
+    }
+
+    // --- Screen Router ---
+    if (gameMode == 1) {
+        drawOriginalBlackjackScreen();
+    } else if (gameMode == 2) {
+        drawDiceScreen();
+    }
+  }
+
+  private void drawGlobalHeader() {
+    fill(0, 75);
+    rect(0, 0, width, 45);
+    fill(255);
+    textSize(14);
+    text("WALLET BALANCE: $" + sharedAccount.getBalance(), 20, 28);
+    
+    textAlign(RIGHT);
+    fill(gameMode == 1 ? color(255, 215, 0) : 180);
+    text("[Press B] Blackjack Table", width - 220, 28);
+    fill(gameMode == 2 ? color(255, 215, 0) : 180);
+    text("[Press D] High-Low Dice", width - 30, 28);
+    textAlign(LEFT);
+  }
+
+  /**
+   * Screen 1: Original Blackjack Layout
+   */
+  private void drawOriginalBlackjackScreen() {
+    textSize(24);
+    fill(255);
+    text("Bankroll Balance: $" + blackjack.getBalance(), 50, 80);
+    text("Status: " + blackjack.getGameMessage(), 50, 120);
+    
+    // Draw Deck Stack
+    int deckX = 650;
+    int deckY = 80;
+    if (backOfCardImage != null) {
+        image(backOfCardImage, deckX + 4, deckY + 4, 90, 130);
+        image(backOfCardImage, deckX + 2, deckY + 2, 90, 130);
+        image(backOfCardImage, deckX, deckY, 90, 130);
+    } else {
+        fill(40, 40, 40);
+        rect(deckX, deckY, 90, 130, 5);
+    }
+
+    // Phase 1: Betting Mode
+    if (enteringBet) {
+        fill(255, 255, 150);
+        textSize(24);
+        text("Type your blackjack bet: $" + bettingInput + "_", 50, 180);
+        textSize(14);
+        fill(200);
+        text("Type digits [0-9], BACKSPACE to edit, ENTER to confirm deal.", 50, 220);
+    }
+    
+    // Phase 2: Active Hands Table Environment
+    if (!blackjack.getPlayer().getHand().getCards().isEmpty()) {
+        // Dealer Region
+        fill(255);
+        textSize(18);
+        if (blackjack.isRoundOver()) {
+            text("Dealer Hand (Total: " + blackjack.getDealerHand().getValue() + ")", 50, 250);
+        } else {
+            text("Dealer Hand (Showing Card value)", 50, 250);
+        }
+        drawHandVisuals(blackjack.getDealerHand(), 50, 270, true);
+        
+        // Player Region
+        fill(255);
+        textSize(18);
+        text("Your Hand (Total: " + blackjack.getPlayer().getHand().getValue() + ")", 50, 420);
+        drawHandVisuals(blackjack.getPlayer().getHand(), 50, 440, false);
+        
+        // Bet & Outcome Status displays
+        textSize(24);
+        textAlign(CENTER);
+        if (!blackjack.isRoundOver()) {
+            fill(255, 215, 0); 
+            text("Current Bet: $" + blackjack.getCurrentBet(), width - 150, height - 100);
+            fill(255, 255, 150);
+            textSize(16);
+            text("Press 'H' to Hit\nPress 'S' to Stand", width - 150, height - 60);
+        } else {
+            String outcomeMsg = blackjack.getGameMessage();
+            if (outcomeMsg.contains("You win") || outcomeMsg.contains("win!")) {
+                fill(50, 255, 50);
+                text("Amount Won: +$" + blackjack.getCurrentBet(), width - 150, height - 80);
+            } else if (outcomeMsg.contains("Tie") || outcomeMsg.contains("Push")) {
+                fill(200);
+                text("Push: No Change", width - 150, height - 80);
+            } else {
+                fill(255, 50, 50);
+                text("Amount Lost: -$" + blackjack.getCurrentBet(), width - 150, height - 80);
+            }
+            fill(255);
+            textSize(14);
+            text("Press ENTER to play again", width - 150, height - 40);
+        }
+        textAlign(LEFT);
+    }
+  }
+
+  /**
+   * Screen 2: High or Low Dice Layout
+   */
+  private void drawDiceScreen() {
+    cupX = lerp(cupX, targetCupX, 0.1f);
+    cupY = lerp(cupY, targetCupY, 0.1f);
+
+    textSize(24);
+    fill(255);
+    text("Dice Room Target Value: " + diceGame.getTargetValue(), 50, 80);
+
+    if (enteringBet) {
+        fill(255, 255, 150);
+        text("Type your High-Low bet: $" + bettingInput + "_", 50, 150);
+        targetCupX = width / 2f;
+        targetCupY = height / 2f;
+    } 
+    else if (!enteringBet && !diceGame.isRoundOver()) {
+        fill(255, 255, 150);
+        text("Will dice roll HIGHER or LOWER than " + diceGame.getTargetValue() + "?", 50, 140);
+        textSize(16);
+        fill(255);
+        text("Press 'H' for HIGHER  |  Press 'L' for LOWER", 50, 180);
+        fill(255, 215, 0);
+        text("Current Bet Locked: $" + diceGame.getCurrentBet(), 50, 210);
+        
+        targetCupX = width - 120;
+        targetCupY = 160;
+    } 
+    else if (diceGame.isRoundOver()) {
+        String msg = diceGame.getGameMessage();
+        if (msg.contains("Won")) fill(50, 255, 50);
+        else if (msg.contains("Returned") || msg.contains("Push")) fill(200);
+        else fill(255, 50, 50);
+        
+        text(msg, 50, 140);
+        textSize(16);
+        fill(255);
+        text("Press ENTER to change target benchmark and continue.", 50, 180);
+    }
+
+    if (!enteringBet) {
+        drawDiceVisuals(width / 2 - 110, height / 2 - 40);
+    }
+
+    if (cupImage != null) {
+        imageMode(CENTER);
+        image(cupImage, cupX, cupY, 180, 180);
+        imageMode(CORNER);
+    }
+  }
+
+  private void drawDiceVisuals(float startX, float startY) {
+    int d1 = diceGame.getDie1();
+    int d2 = diceGame.getDie2();
+    PImage img1 = diceImages.get(d1);
+    PImage img2 = diceImages.get(d2);
+
+    if (img1 != null) image(img1, startX, startY, 100, 100);
+    if (img2 != null) image(img2, startX + 120, startY, 100, 100);
+
+    fill(255);
+    textSize(22);
+    textAlign(CENTER);
+    text("Dice Total: " + (d1 + d2), startX + 110, startY + 135);
+    textAlign(LEFT);
+  }
+
+  private void drawBankruptcyScreen() {
+    fill(255, 50, 50);
+    textSize(32);
+    text("BANKRUPT!", 50, 140);
+    textSize(18);
+    fill(255);
+    text("Press 'R' to completely wipe profiles and claim a fresh $1000 credit line.", 50, 180);
+  }
+
+  @Override
+  public void keyPressed() {
+    // Global Profile Hard Reboot
+    if (key == 'r' || key == 'R') {
+        sharedAccount = new BankAccount(1000);
+        blackjack = new Blackjack(sharedAccount);
+        diceGame = new DiceGame(sharedAccount);
+        bettingInput = "";
+        enteringBet = true;
+        return;
+    }
+
+    // Dynamic Navigation Keys (Only switch table views when a round isn't active)
+    if ((key == 'b' || key == 'B') && (blackjack.isRoundOver() && diceGame.isRoundOver())) {
+        gameMode = 1;
+        bettingInput = "";
+        enteringBet = true;
+        return;
+    }
+    if ((key == 'd' || key == 'D') && (blackjack.isRoundOver() && diceGame.isRoundOver())) {
+        gameMode = 2;
+        bettingInput = "";
+        enteringBet = true;
+        return;
+    }
+
+    // Route inputs down to sub-methods based on active room
+    if (gameMode == 1) {
+        handleBlackjackInput();
+    } else if (gameMode == 2) {
+        handleDiceInput();
+    }
+  }
+
+  private void handleBlackjackInput() {
+    if (enteringBet) {
+        if (key >= '0' && key <= '9') bettingInput += key;
+        else if (key == BACKSPACE && bettingInput.length() > 0) bettingInput = bettingInput.substring(0, bettingInput.length() - 1);
+        else if (key == ENTER || key == RETURN) {
+            if (bettingInput.length() > 0) {
+                int bet = Integer.parseInt(bettingInput);
+                if (blackjack.startRound(bet)) {
+                    enteringBet = false;
+                } else {
+                    bettingInput = "";
+                }
+            }
+        }
+    } else {
+        if (!blackjack.isRoundOver()) {
+            if (key == 'h' || key == 'H') blackjack.hit();
+            else if (key == 's' || key == 'S') blackjack.stand();
+        } else {
+            if (key == ENTER || key == RETURN) {
+                bettingInput = "";
+                enteringBet = true;
+            }
+        }
+    }
+  }
+
+  private void handleDiceInput() {
+    if (enteringBet) {
+        if (key >= '0' && key <= '9') bettingInput += key;
+        else if (key == BACKSPACE && bettingInput.length() > 0) bettingInput = bettingInput.substring(0, bettingInput.length() - 1);
+        else if (key == ENTER || key == RETURN) {
+            if (bettingInput.length() > 0) {
+                int bet = Integer.parseInt(bettingInput);
+                if (diceGame.lockBet(bet)) {
+                    enteringBet = false;
+                } else {
+                    bettingInput = "";
+                }
+            }
+        }
+    } 
+    else if (!diceGame.isRoundOver()) {
+        if (key == 'h' || key == 'H') diceGame.playRound(true);
+        else if (key == 'l' || key == 'L') diceGame.playRound(false);
+    } 
+    else {
+        if (key == ENTER || key == RETURN) {
+            diceGame.prepareNextRound();
+            bettingInput = "";
+            enteringBet = true;
+        }
+    }
+  }
+
+  public void drawHandVisuals(Hand hand, float startX, float startY, boolean hideFirstCard) {
+    float xOffset = 0;
+    int cardWidth = 90;  
+    int cardHeight = 130;
+
+    for (int i = 0; i < hand.getCards().size(); i++) {
+        Card card = hand.getCards().get(i);
+        String lookupKey = card.getRank() + card.getSuit();
+        PImage cardImg = cardImages.get(lookupKey);
+        float currentX = startX + xOffset;
+
+        if (i == 0 && hideFirstCard && !blackjack.isRoundOver()) {
+            if (backOfCardImage != null) image(backOfCardImage, currentX, startY, cardWidth, cardHeight);
+            else { fill(0, 0, 150); rect(currentX, startY, cardWidth, cardHeight, 5); }
+        } else {
+            if (cardImg != null) image(cardImg, currentX, startY, cardWidth, cardHeight);
+            else {
+                fill(255); stroke(0); rect(currentX, startY, cardWidth, cardHeight, 5);
+                fill(0); textSize(16); text(card.getRank() + "\n" + card.getSuit().substring(0,3), currentX + 10, startY + 30);
+            }
+        }
+        xOffset += 110;
+    }
+  }
+}
+2. The Original Core State Handler: Blackjack.java
+This ensures your original layout elements render cards through the original Player object configuration.
+
+Java
+public class Blackjack {
+
+    private Player player; // Restored the original Player tracking logic
+    private Hand dealerHand;
+    private Deck deck;
+    private int currentBet;
+    private String gameMessage;
+    private boolean isRoundOver;
+
+    public Blackjack(BankAccount account) {
+        this.player = new Player(account); // Links Player to the shared bank reference
+        this.gameMessage = "Place your bet to begin!";
+        this.isRoundOver = true;
+    }
+
+    public boolean startRound(int bet) {
+        if (bet > player.getBalance() || bet <= 0) {
+            gameMessage = "Invalid bet amount.";
+            return false;
+        }
+
+        this.currentBet = bet;
+        this.deck = new Deck();
+        this.player.resetHand();
+        this.dealerHand = new Hand();
+        this.isRoundOver = false;
+
+        player.getHand().addCard(deck.drawCard());
+        dealerHand.addCard(deck.drawCard());
+        player.getHand().addCard(deck.drawCard());
+        dealerHand.addCard(deck.drawCard());
+
+        gameMessage = "Hit or Stand?";
+        return true;
+    }
+
+    public void hit() {
+        if (isRoundOver) return;
+
+        player.getHand().addCard(deck.drawCard());
+
+        if (player.getHand().isBust()) {
+            gameMessage = "You busted! Dealer wins.";
+            player.loseBet(currentBet);
+            isRoundOver = true;
+        }
+    }
+
+    public void stand() {
+        if (isRoundOver) return;
+
+        while (dealerHand.getValue() < 17) {
+            dealerHand.addCard(deck.drawCard());
+        }
+
+        evaluateWinners();
+    }
+
+    private void evaluateWinners() {
+        isRoundOver = true;
+
+        int playerTotal = player.getHand().getValue();
+        int dealerTotal = dealerHand.getValue();
+        boolean playerNatural = player.getHand().isNatural21();
+        boolean dealerNatural = dealerHand.isNatural21();
+        boolean playerMade21 = (playerTotal == 21 && !playerNatural);
+        boolean dealerMade21 = (dealerTotal == 21 && !dealerNatural);
+
+        if (player.getHand().isBust()) {
+            gameMessage = "You busted! Dealer wins.";
+            player.loseBet(currentBet);
+        } 
+        else if (dealerHand.isBust()) {
+            gameMessage = "Dealer busted! You win!";
+            player.winBet(currentBet);
+        } 
+        else if (playerNatural && !dealerNatural) {
+            gameMessage = "Natural 21! You win!";
+            player.winBet(currentBet);
+        } 
+        else if (dealerNatural && !playerNatural) {
+            gameMessage = "Dealer natural 21 wins.";
+            player.loseBet(currentBet);
+        } 
+        else if (playerNatural && dealerNatural) {
+            gameMessage = "Tie! Both got Natural 21.";
+        } 
+        else if (playerMade21 && dealerMade21) {
+            gameMessage = "Tie! Both made 21.";
+        } 
+        else if (playerTotal > dealerTotal) {
+            gameMessage = "You win!";
+            player.winBet(currentBet);
+        } 
+        else if (playerTotal < dealerTotal) {
+            gameMessage = "Dealer wins.";
+            player.loseBet(currentBet);
+        } 
+        else {
+            gameMessage = "Push (Tie).";
+        }
+    }
+
+    public Player getPlayer() { return player; }
+    public Hand getDealerHand() { return dealerHand; }
+    public String getGameMessage() { return gameMessage; }
+    public boolean isRoundOver() { return isRoundOver; }
+    public int getBalance() { return player.getBalance(); }
+    public int getCurrentBet() { return currentBet; }
+}
+3. The Re-linked Account Model: Player.java
+This maps your original layout code cleanly back into place, forwarding the accounting actions directly to the synchronized BankAccount instance wrapper.
+
+Java
+public class Player {
+
+    private Hand hand;
+    private BankAccount account; 
+
+    public Player(BankAccount account) {
+        this.hand = new Hand();
+        this.account = account;
+    }
+
+    public Hand getHand() {
+        return hand;
+    }
+
+    public int getBalance() {
+        return account.getBalance();
+    }
+
+    public void winBet(int bet) {
+        account.deposit(bet * 2); // Net addition matching original payout mechanics
+    }
+
+    public void loseBet(int bet) {
+        account.withdraw(bet);
+    }
+
+    public void resetHand() {
+        hand = new Hand();
+    }
+}
+
+## 15
+fix the way that the images arent showing up for the dice game
+
+The reason the dice images were not displaying correctly is because they were being loaded without specifying the images/ directory prefix in their path strings, while the blackjack images correctly included it (e.g., "images/cardBack.png"). Since all game asset assets are placed in the local asset directory structure together, updating the diceImages mapping to load from the correct "images/" folder path fixes the issue.
+
+Additionally, when the images are successfully loaded from their path, your sketch will display the matching pair of visual assets instead of the text boxes.
+
+Here is the fully fixed and consolidated Game.java class:
+
+Java
+import processing.core.PApplet;
+import processing.core.PImage;
+import java.util.HashMap;
+
+public class Game extends PApplet {
+
+  // --- Visual Layout Fields ---
+  HashMap<String, PImage> cardImages;
+  PImage backOfCardImage;
+  
+  // --- High-Low Dice Assets ---
+  PImage cupImage;
+  HashMap<Integer, PImage> diceImages;
+
+  PApplet p;
+  public static final int APP_WIDTH = 800;
+  public static final int APP_HEIGHT = 600;
+
+  // --- Shared Bank Roll System ---
+  BankAccount sharedAccount;
+
+  // --- Parallel Backend Engine Objects ---
+  Blackjack blackjack;
+  DiceGame diceGame;
+  
+  // --- Global State Controller ---
+  // 1 = Original Blackjack Screen, 2 = High-Low Dice Screen
+  int gameMode = 1; 
+
+  // --- Input State Fields ---
+  String bettingInput = "";     // Temporarily holds the numbers the player types
+  boolean enteringBet = true;   // Tracks if the player is currently typing a bet
+  
+  // --- Cup Animation Fields ---
+  float cupX, cupY;
+  float targetCupX, targetCupY;
+
+  @Override
+  public void settings() {
+    size(APP_WIDTH, APP_HEIGHT, JAVA2D);
+    p = this;
+  }
+
+  @Override
+  public void setup() {
+    // 1. Initialize centralized tracking wallet
+    sharedAccount = new BankAccount(1000);
+
+    // 2. Instantiate backends passing the shared wallet instance
+    blackjack = new Blackjack(sharedAccount);
+    diceGame = new DiceGame(sharedAccount);
+    
+    // 3. Load Blackjack Card Assets
+    cardImages = new HashMap<String, PImage>();
+    backOfCardImage = loadImage("images/cardBack.png"); 
+
+    String[] suits = {"Hearts", "Diamonds", "Clubs", "Spades"};
+    String[] ranks = {"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"};
+
+    for (String suit : suits) {
+        for (String rank : ranks) {
+            String fileName = "images/" + rank + "_of_" + suit + ".png"; 
+            PImage img = loadImage(fileName);
+            if (img != null) {
+                cardImages.put(rank + suit, img);
+            }
+        }
+    }
+    
+    // 4. Load High-Low Dice Assets (FIXED PATH DIRECTIONS HERE)
+    diceImages = new HashMap<Integer, PImage>();
+    cupImage = loadImage("images/cup.png");
+    diceImages.put(1, loadImage("images/oneSide.png"));
+    diceImages.put(2, loadImage("images/twoSide.png"));
+    diceImages.put(3, loadImage("images/threeSide.png"));
+    diceImages.put(4, loadImage("images/fourSide.png"));
+    diceImages.put(5, loadImage("images/fiveSide.png"));
+    diceImages.put(6, loadImage("images/sixSide.png"));
+
+    // Default cup positions
+    cupX = width / 2f;
+    cupY = height / 2f;
+    targetCupX = cupX;
+    targetCupY = cupY;
+  }
+
+  @Override
+  public void draw() {
+    background(20, 110, 50); // Poker room green felt
+    
+    // Draw Global Persistent Game Selector Header
+    drawGlobalHeader();
+    
+    // Global Bankruptcy Check
+    if (sharedAccount.getBalance() <= 0 && ((gameMode == 1 && blackjack.isRoundOver()) || (gameMode == 2 && diceGame.isRoundOver()))) {
+        drawBankruptcyScreen();
+        return;
+    }
+
+    // --- Screen Router ---
+    if (gameMode == 1) {
+        drawOriginalBlackjackScreen();
+    } else if (gameMode == 2) {
+        drawDiceScreen();
+    }
+  }
+
+  private void drawGlobalHeader() {
+    fill(0, 75);
+    rect(0, 0, width, 45);
+    fill(255);
+    textSize(14);
+    text("WALLET BALANCE: $" + sharedAccount.getBalance(), 20, 28);
+    
+    textAlign(RIGHT);
+    fill(gameMode == 1 ? color(255, 215, 0) : 180);
+    text("[Press B] Blackjack Table", width - 220, 28);
+    fill(gameMode == 2 ? color(255, 215, 0) : 180);
+    text("[Press D] High-Low Dice", width - 30, 28);
+    textAlign(LEFT);
+  }
+
+  /**
+   * Screen 1: Original Blackjack Layout
+   */
+  private void drawOriginalBlackjackScreen() {
+    textSize(24);
+    fill(255);
+    text("Bankroll Balance: $" + blackjack.getBalance(), 50, 80);
+    text("Status: " + blackjack.getGameMessage(), 50, 120);
+    
+    // Draw Deck Stack
+    int deckX = 650;
+    int deckY = 80;
+    if (backOfCardImage != null) {
+        image(backOfCardImage, deckX + 4, deckY + 4, 90, 130);
+        image(backOfCardImage, deckX + 2, deckY + 2, 90, 130);
+        image(backOfCardImage, deckX, deckY, 90, 130);
+    } else {
+        fill(40, 40, 40);
+        rect(deckX, deckY, 90, 130, 5);
+    }
+
+    // Phase 1: Betting Mode
+    if (enteringBet) {
+        fill(255, 255, 150);
+        textSize(24);
+        text("Type your blackjack bet: $" + bettingInput + "_", 50, 180);
+        textSize(14);
+        fill(200);
+        text("Type digits [0-9], BACKSPACE to edit, ENTER to confirm deal.", 50, 220);
+    }
+    
+    // Phase 2: Active Hands Table Environment
+    if (!blackjack.getPlayer().getHand().getCards().isEmpty()) {
+        // Dealer Region
+        fill(255);
+        textSize(18);
+        if (blackjack.isRoundOver()) {
+            text("Dealer Hand (Total: " + blackjack.getDealerHand().getValue() + ")", 50, 250);
+        } else {
+            text("Dealer Hand (Showing Card value)", 50, 250);
+        }
+        drawHandVisuals(blackjack.getDealerHand(), 50, 270, true);
+        
+        // Player Region
+        fill(255);
+        textSize(18);
+        text("Your Hand (Total: " + blackjack.getPlayer().getHand().getValue() + ")", 50, 420);
+        drawHandVisuals(blackjack.getPlayer().getHand(), 50, 440, false);
+        
+        // Bet & Outcome Status displays
+        textSize(24);
+        textAlign(CENTER);
+        if (!blackjack.isRoundOver()) {
+            fill(255, 215, 0); 
+            text("Current Bet: $" + blackjack.getCurrentBet(), width - 150, height - 100);
+            fill(255, 255, 150);
+            textSize(16);
+            text("Press 'H' to Hit\nPress 'S' to Stand", width - 150, height - 60);
+        } else {
+            String outcomeMsg = blackjack.getGameMessage();
+            if (outcomeMsg.contains("You win") || outcomeMsg.contains("win!")) {
+                fill(50, 255, 50);
+                text("Amount Won: +$" + blackjack.getCurrentBet(), width - 150, height - 80);
+            } else if (outcomeMsg.contains("Tie") || outcomeMsg.contains("Push")) {
+                fill(200);
+                text("Push: No Change", width - 150, height - 80);
+            } else {
+                fill(255, 50, 50);
+                text("Amount Lost: -$" + blackjack.getCurrentBet(), width - 150, height - 80);
+            }
+            fill(255);
+            textSize(14);
+            text("Press ENTER to play again", width - 150, height - 40);
+        }
+        textAlign(LEFT);
+    }
+  }
+
+  /**
+   * Screen 2: High or Low Dice Layout
+   */
+  private void drawDiceScreen() {
+    cupX = lerp(cupX, targetCupX, 0.1f);
+    cupY = lerp(cupY, targetCupY, 0.1f);
+
+    textSize(24);
+    fill(255);
+    text("Dice Room Target Value: " + diceGame.getTargetValue(), 50, 80);
+
+    if (enteringBet) {
+        fill(255, 255, 150);
+        text("Type your High-Low bet: $" + bettingInput + "_", 50, 150);
+        targetCupX = width / 2f;
+        targetCupY = height / 2f;
+    } 
+    else if (!enteringBet && !diceGame.isRoundOver()) {
+        fill(255, 255, 150);
+        text("Will dice roll HIGHER or LOWER than " + diceGame.getTargetValue() + "?", 50, 140);
+        textSize(16);
+        fill(255);
+        text("Press 'H' for HIGHER  |  Press 'L' for LOWER", 50, 180);
+        fill(255, 215, 0);
+        text("Current Bet Locked: $" + diceGame.getCurrentBet(), 50, 210);
+        
+        targetCupX = width - 120;
+        targetCupY = 160;
+    } 
+    else if (diceGame.isRoundOver()) {
+        String msg = diceGame.getGameMessage();
+        if (msg.contains("Won")) fill(50, 255, 50);
+        else if (msg.contains("Returned") || msg.contains("Push")) fill(200);
+        else fill(255, 50, 50);
+        
+        text(msg, 50, 140);
+        textSize(16);
+        fill(255);
+        text("Press ENTER to change target benchmark and continue.", 50, 180);
+    }
+
+    if (!enteringBet) {
+        drawDiceVisuals(width / 2 - 110, height / 2 - 40);
+    }
+
+    if (cupImage != null) {
+        imageMode(CENTER);
+        image(cupImage, cupX, cupY, 180, 180);
+        imageMode(CORNER);
+    } else {
+        fill(30, 30, 30, 220);
+        rectMode(CENTER);
+        rect(cupX, cupY, 140, 140, 15);
+        rectMode(CORNER);
+    }
+  }
+
+  private void drawDiceVisuals(float startX, float startY) {
+    int d1 = diceGame.getDie1();
+    int d2 = diceGame.getDie2();
+    PImage img1 = diceImages.get(d1);
+    PImage img2 = diceImages.get(d2);
+
+    if (img1 != null) {
+        image(img1, startX, startY, 100, 100);
+    } else {
+        fill(255); rect(startX, startY, 100, 100, 10);
+        fill(0); textSize(20); text(d1, startX + 40, startY + 55);
+    }
+
+    if (img2 != null) {
+        image(img2, startX + 120, startY, 100, 100);
+    } else {
+        fill(255); rect(startX + 120, startY, 100, 100, 10);
+        fill(0); textSize(20); text(d2, startX + 160, startY + 55);
+    }
+
+    fill(255);
+    textSize(22);
+    textAlign(CENTER);
+    text("Dice Total: " + (d1 + d2), startX + 110, startY + 135);
+    textAlign(LEFT);
+  }
+
+  private void drawBankruptcyScreen() {
+    fill(255, 50, 50);
+    textSize(32);
+    text("BANKRUPT!", 50, 140);
+    textSize(18);
+    fill(255);
+    text("Press 'R' to completely wipe profiles and claim a fresh $1000 credit line.", 50, 180);
+  }
+
+  @Override
+  public void keyPressed() {
+    // Global Profile Hard Reboot
+    if (key == 'r' || key == 'R') {
+        sharedAccount = new BankAccount(1000);
+        blackjack = new Blackjack(sharedAccount);
+        diceGame = new DiceGame(sharedAccount);
+        bettingInput = "";
+        enteringBet = true;
+        return;
+    }
+
+    // Dynamic Navigation Keys (Only switch table views when a round isn't active)
+    if ((key == 'b' || key == 'B') && (blackjack.isRoundOver() && diceGame.isRoundOver())) {
+        gameMode = 1;
+        bettingInput = "";
+        enteringBet = true;
+        return;
+    }
+    if ((key == 'd' || key == 'D') && (blackjack.isRoundOver() && diceGame.isRoundOver())) {
+        gameMode = 2;
+        bettingInput = "";
+        enteringBet = true;
+        return;
+    }
+
+    // Route inputs down to sub-methods based on active room
+    if (gameMode == 1) {
+        handleBlackjackInput();
+    } else if (gameMode == 2) {
+        handleDiceInput();
+    }
+  }
+
+  private void handleBlackjackInput() {
+    if (enteringBet) {
+        if (key >= '0' && key <= '9') bettingInput += key;
+        else if (key == BACKSPACE && bettingInput.length() > 0) bettingInput = bettingInput.substring(0, bettingInput.length() - 1);
+        else if (key == ENTER || key == RETURN) {
+            if (bettingInput.length() > 0) {
+                int bet = Integer.parseInt(bettingInput);
+                if (blackjack.startRound(bet)) {
+                    enteringBet = false;
+                } else {
+                    bettingInput = "";
+                }
+            }
+        }
+    } else {
+        if (!blackjack.isRoundOver()) {
+            if (key == 'h' || key == 'H') blackjack.hit();
+            else if (key == 's' || key == 'S') blackjack.stand();
+        } else {
+            if (key == ENTER || key == RETURN) {
+                bettingInput = "";
+                enteringBet = true;
+            }
+        }
+    }
+  }
+
+  private void handleDiceInput() {
+    if (enteringBet) {
+        if (key >= '0' && key <= '9') bettingInput += key;
+        else if (key == BACKSPACE && bettingInput.length() > 0) bettingInput = bettingInput.substring(0, bettingInput.length() - 1);
+        else if (key == ENTER || key == RETURN) {
+            if (bettingInput.length() > 0) {
+                int bet = Integer.parseInt(bettingInput);
+                if (diceGame.lockBet(bet)) {
+                    enteringBet = false;
+                } else {
+                    bettingInput = "";
+                }
+            }
+        }
+    } 
+    else if (!diceGame.isRoundOver()) {
+        if (key == 'h' || key == 'H') diceGame.playRound(true);
+        else if (key == 'l' || key == 'L') diceGame.playRound(false);
+    } 
+    else {
+        if (key == ENTER || key == RETURN) {
+            diceGame.prepareNextRound();
+            bettingInput = "";
+            enteringBet = true;
+        }
+    }
+  }
+
+  public void drawHandVisuals(Hand hand, float startX, float startY, boolean hideFirstCard) {
+    float xOffset = 0;
+    int cardWidth = 90;   
+    int cardHeight = 130;
+
+    for (int i = 0; i < hand.getCards().size(); i++) {
+        Card card = hand.getCards().get(i);
+        String lookupKey = card.getRank() + card.getSuit();
+        PImage cardImg = cardImages.get(lookupKey);
+        float currentX = startX + xOffset;
+
+        if (i == 0 && hideFirstCard && !blackjack.isRoundOver()) {
+            if (backOfCardImage != null) image(backOfCardImage, currentX, startY, cardWidth, cardHeight);
+            else { fill(0, 0, 150); rect(currentX, startY, cardWidth, cardHeight, 5); }
+        } else {
+            if (cardImg != null) image(cardImg, currentX, startY, cardWidth, cardHeight);
+            else {
+                fill(255); stroke(0); rect(currentX, startY, cardWidth, cardHeight, 5);
+                fill(0); textSize(16); text(card.getRank() + "\n" + card.getSuit().substring(0,3), currentX + 10, startY + 30);
+            }
+        }
+        xOffset += 110; 
+    }
+  }
+}
+
 
