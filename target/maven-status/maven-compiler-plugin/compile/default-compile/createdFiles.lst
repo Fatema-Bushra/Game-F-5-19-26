@@ -1,5 +1,6 @@
 GridTile.class
 Blackjack.class
+DiceGame.class
 Input.class
 Screen.class
 Hand.class
@@ -12,6 +13,7 @@ Resource.class
 Button.class
 Main$2.class
 Util.class
+BankAccount.class
 Grid.class
 GridLocation.class
 Card.class
