@@ -110,7 +110,7 @@ public class Game extends PApplet {
     rect(0, 0, width, 45);
     fill(255);
     textSize(14);
-    text("WALLET BALANCE: $" + sharedAccount.getBalance(), 20, 28);
+    text("BALANCE: $" + sharedAccount.getBalance(), 20, 28);
     
     textAlign(RIGHT);
     fill(gameMode == 1 ? color(255, 215, 0) : 180);
@@ -207,7 +207,8 @@ public class Game extends PApplet {
 
     textSize(24);
     fill(255);
-    text("Current Value: " + diceGame.getTargetValue(), 50, 80);
+    text("BALANCE: $" + sharedAccount.getBalance(), 50, 80);
+    text("Current Value: " + diceGame.getTargetValue(), 50, 115);
 
     if (enteringBet) {
         fill(255, 255, 150);
@@ -217,7 +218,7 @@ public class Game extends PApplet {
     } 
     else if (!enteringBet && !diceGame.isRoundOver()) {
         fill(255, 255, 150);
-        text("Will dice roll HIGHER or LOWER than " + diceGame.getTargetValue() + "?", 50, 140);
+        text("Will dice roll HIGHER or LOWER than " + diceGame.getTargetValue() + "?", 50, 150);
         textSize(16);
         fill(255);
         text("Press 'H' for HIGHER  |  Press 'L' for LOWER", 50, 180);
