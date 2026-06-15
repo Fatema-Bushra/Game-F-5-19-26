@@ -1,6 +1,7 @@
+import java.util.HashMap;
+
 import processing.core.PApplet;
 import processing.core.PImage;
-import java.util.HashMap;
 
 public class Game extends PApplet {
 
@@ -11,6 +12,10 @@ public class Game extends PApplet {
   // --- High-Low Dice Assets ---
   PImage cupImage;
   HashMap<Integer, PImage> diceImages;
+
+  // --- Menu Visual Assets ---
+  PImage blackjackIcon;
+  PImage diceIcon;
 
   PApplet p;
   public static final int APP_WIDTH = 800;
@@ -24,8 +29,12 @@ public class Game extends PApplet {
   DiceGame diceGame;
   
   // --- Global State Controller ---
-  // 1 = Original Blackjack Screen, 2 = High-Low Dice Screen
-  int gameMode = 1; 
+  // 0 = Game Selection Menu, 1 = Original Blackjack Screen, 2 = High-Low Dice Screen
+  int gameMode = 0; 
+
+  // --- UI Interactive Components ---
+  Button blackjackButton;
+  Button diceButton;
 
   // --- Input State Fields ---
   String bettingInput = "";     // Temporarily holds the numbers the player types
@@ -50,7 +59,29 @@ public class Game extends PApplet {
     blackjack = new Blackjack(sharedAccount);
     diceGame = new DiceGame(sharedAccount);
     
-    // 3. Load Blackjack Card Assets
+    // 3. Load Menu Icon Images from local assets directory
+    // Note: Ensure files are saved in the project root folder or /data directory.
+    blackjackIcon = loadImage("images/blackJackIcon.png");
+    diceIcon = loadImage("images/diceIcon.png");
+    
+    // Resize images to fit cleanly inside the button structures
+    if (blackjackIcon != null) blackjackIcon.resize(160, 340);
+    if (diceIcon != null) diceIcon.resize(160, 160);
+    
+    // 4. Initialize Interactive Buttons for Selection Screen
+    blackjackButton = new Button(this, "circle", 60, 220, 360, 380, "BLACKJACK");
+    blackjackButton.setButtonColor(PColor.get(20, 110, 50)); // Deep container green
+    blackjackButton.setTextColor(PColor.WHITE);             // Custom API text styling
+    blackjackButton.setShapeRounding(12);                   // Smooth rectangle borders
+    blackjackButton.setFontFactor(1.2f);                    // Enlarge button text label
+    
+    diceButton = new Button(this, "circle", 450, 220, 220, 240, "HIGH-LOW DICE");
+    diceButton.setButtonColor(PColor.get(20, 110, 50));
+    diceButton.setTextColor(PColor.WHITE);
+    diceButton.setShapeRounding(12);
+    diceButton.setFontFactor(1.2f);
+
+    // 5. Load Blackjack Card Assets
     cardImages = new HashMap<String, PImage>();
     backOfCardImage = loadImage("images/cardBack.png"); 
 
@@ -67,7 +98,7 @@ public class Game extends PApplet {
         }
     }
     
-    // 4. Load High-Low Dice Assets (FIXED PATH DIRECTIONS HERE)
+    // 6. Load High-Low Dice Assets
     diceImages = new HashMap<Integer, PImage>();
     cupImage = loadImage("images/cup.png");
     diceImages.put(1, loadImage("images/oneSide.png"));
@@ -88,20 +119,76 @@ public class Game extends PApplet {
   public void draw() {
     background(20, 110, 50); // Poker room green felt
     
-    // Draw Global Persistent Game Selector Header
-    drawGlobalHeader();
-    
-    // Global Bankruptcy Check
-    if (sharedAccount.getBalance() <= 0 && ((gameMode == 1 && blackjack.isRoundOver()) || (gameMode == 2 && diceGame.isRoundOver()))) {
-        drawBankruptcyScreen();
-        return;
-    }
-
     // --- Screen Router ---
-    if (gameMode == 1) {
-        drawOriginalBlackjackScreen();
-    } else if (gameMode == 2) {
-        drawDiceScreen();
+    if (gameMode == 0) {
+        drawSelectionScreen();
+    } else {
+        // Draw Global Persistent Game Selector Header (Only inside active game rooms)
+        drawGlobalHeader();
+        
+        // Global Bankruptcy Check
+        if (sharedAccount.getBalance() <= 0 && ((gameMode == 1 && blackjack.isRoundOver()) || (gameMode == 2 && diceGame.isRoundOver()))) {
+            drawBankruptcyScreen();
+            return;
+        }
+
+        if (gameMode == 1) {
+            drawOriginalBlackjackScreen();
+        } else if (gameMode == 2) {
+            drawDiceScreen();
+        }
+    }
+  }
+
+  /**
+   * Screen 0: Main Game Selection Menu
+   */
+  private void drawSelectionScreen() {
+    background(15, 65, 35); // Dark casino style green background
+    
+    // Title Text Layout
+    textAlign(CENTER);
+    fill(255, 215, 0); // Casino Gold
+    textSize(38);
+    text("CASINO GAME HUB", width / 2f, 90);
+    
+    fill(220);
+    textSize(16);
+    text("Select a game icon below to enter the table", width / 2f, 130);
+    
+    fill(255);
+    textSize(18);
+    text("Current Account Balance: $" + sharedAccount.getBalance(), width / 2f, 170);
+    textAlign(LEFT);
+
+    // Standardize processing corner tracking prior to layout renders
+    imageMode(CORNER);
+
+    // 1. Draw the interactive wrapper background buttons
+    blackjackButton.show();
+    diceButton.show();
+
+    // 2. Overlay the Graphical Icons precisely on top of container coordinates
+    if (blackjackIcon != null) {
+        // Button bounding box properties: X=130, Y=220, W=220, H=240
+        // Centers image horizontally inside the rectangle container structure
+        image(blackjackIcon, 160, 240); 
+    } else {
+        // Fallback indicator text if file path fails to resolve locally
+        fill(255, 100, 100);
+        textSize(12);
+        text("[Missing blackJackIcon.png]", 165, 320);
+    }
+    
+    if (diceIcon != null) {
+        // Button bounding box properties: X=450, Y=220, W=220, H=240
+        // Centers image horizontally inside second container block
+        image(diceIcon, 480, 260);
+    } else {
+        // Fallback indicator text if file path fails to resolve locally
+        fill(255, 100, 100);
+        textSize(12);
+        text("[Missing diceIcon.png]", 495, 320);
     }
   }
 
@@ -113,6 +200,8 @@ public class Game extends PApplet {
     text("BALANCE: $" + sharedAccount.getBalance(), 20, 28);
     
     textAlign(RIGHT);
+    fill(180);
+    text("[Press M] Main Menu Hub", width - 420, 28);
     fill(gameMode == 1 ? color(255, 215, 0) : 180);
     text("[Press B] Blackjack Table", width - 220, 28);
     fill(gameMode == 2 ? color(255, 215, 0) : 180);
@@ -129,10 +218,10 @@ public class Game extends PApplet {
     text("Bankroll Balance: $" + blackjack.getBalance(), 50, 80);
     text("Status: " + blackjack.getGameMessage(), 50, 120);
     
-    // Draw Deck Stack
     int deckX = 650;
     int deckY = 80;
     if (backOfCardImage != null) {
+        imageMode(CORNER);
         image(backOfCardImage, deckX + 4, deckY + 4, 90, 130);
         image(backOfCardImage, deckX + 2, deckY + 2, 90, 130);
         image(backOfCardImage, deckX, deckY, 90, 130);
@@ -141,7 +230,6 @@ public class Game extends PApplet {
         rect(deckX, deckY, 90, 130, 5);
     }
 
-    // Phase 1: Betting Mode
     if (enteringBet) {
         fill(255, 255, 150);
         textSize(24);
@@ -151,9 +239,7 @@ public class Game extends PApplet {
         text("Type digits [0-9], BACKSPACE to edit, ENTER to confirm deal.", 50, 220);
     }
     
-    // Phase 2: Active Hands Table Environment
     if (!blackjack.getPlayer().getHand().getCards().isEmpty()) {
-        // Dealer Region
         fill(255);
         textSize(18);
         if (blackjack.isRoundOver()) {
@@ -163,13 +249,11 @@ public class Game extends PApplet {
         }
         drawHandVisuals(blackjack.getDealerHand(), 50, 270, true);
         
-        // Player Region
         fill(255);
         textSize(18);
         text("Your Hand (Total: " + blackjack.getPlayer().getHand().getValue() + ")", 50, 420);
         drawHandVisuals(blackjack.getPlayer().getHand(), 50, 440, false);
         
-        // Bet & Outcome Status displays
         textSize(24);
         textAlign(CENTER);
         if (!blackjack.isRoundOver()) {
@@ -262,6 +346,7 @@ public class Game extends PApplet {
     PImage img1 = diceImages.get(d1);
     PImage img2 = diceImages.get(d2);
 
+    imageMode(CORNER);
     if (img1 != null) {
         image(img1, startX, startY, 100, 100);
     } else {
@@ -293,29 +378,52 @@ public class Game extends PApplet {
   }
 
   @Override
+  public void mousePressed() {
+    // Detect image/button icon clicks when sitting on the Game Hub Menu
+    if (gameMode == 0) {
+        if (blackjackButton.isClicked()) {
+            gameMode = 1;
+            bettingInput = "";
+            enteringBet = true;
+        } else if (diceButton.isClicked()) {
+            gameMode = 2;
+            bettingInput = "";
+            enteringBet = true;
+        }
+    }
+  }
+
+  @Override
   public void keyPressed() {
-    // Global Profile Hard Reboot
+    // Global Hard Reset
     if (key == 'r' || key == 'R') {
         sharedAccount = new BankAccount(1000);
         blackjack = new Blackjack(sharedAccount);
         diceGame = new DiceGame(sharedAccount);
         bettingInput = "";
         enteringBet = true;
+        gameMode = 0; // Return directly to menu
         return;
     }
 
-    // Dynamic Navigation Keys (Only switch table views when a round isn't active)
-    if ((key == 'b' || key == 'B') && (blackjack.isRoundOver() && diceGame.isRoundOver())) {
-        gameMode = 1;
-        bettingInput = "";
-        enteringBet = true;
-        return;
-    }
-    if ((key == 'd' || key == 'D') && (blackjack.isRoundOver() && diceGame.isRoundOver())) {
-        gameMode = 2;
-        bettingInput = "";
-        enteringBet = true;
-        return;
+    // Navigation inputs (Only switch when a dynamic hand/round is completed)
+    if (blackjack.isRoundOver() && diceGame.isRoundOver()) {
+        if (key == 'm' || key == 'M') {
+            gameMode = 0;
+            return;
+        }
+        if (key == 'b' || key == 'B') {
+            gameMode = 1;
+            bettingInput = "";
+            enteringBet = true;
+            return;
+        }
+        if (key == 'd' || key == 'D') {
+            gameMode = 2;
+            bettingInput = "";
+            enteringBet = true;
+            return;
+        }
     }
 
     // Route inputs down to sub-methods based on active room
@@ -386,6 +494,7 @@ public class Game extends PApplet {
     int cardWidth = 90;   
     int cardHeight = 130;
 
+    imageMode(CORNER);
     for (int i = 0; i < hand.getCards().size(); i++) {
         Card card = hand.getCards().get(i);
         String lookupKey = card.getRank() + card.getSuit();

@@ -1,7 +1,5 @@
 import processing.core.PApplet;
 import processing.core.PFont;
-import java.awt.Font;
-import java.io.InputStream;
 
 /**
  * Button Class - Used to add a button into a Game
@@ -37,7 +35,7 @@ public class Button extends Sprite{
     //------------------ BUTTON CONSTRUCTORS --------------------//
 
     //Button Constructor
-    public Button(PApplet p, String shape, float x, float y, float w, float h, String text) {
+    public Button(PApplet p, String shape, int x, int y, int w, int h, String blackjack) {
 
         super(p, null, 1.0f, x, y,false);  //if Button is Sprite
         this.p = p;
