@@ -1,5 +1,4 @@
 import java.util.HashMap;
-
 import processing.core.PApplet;
 import processing.core.PImage;
 import processing.event.MouseEvent;
@@ -25,7 +24,7 @@ public class Game extends PApplet {
   float scrollY = 0;          
   float maxScrollY = 320;     
   
-  // Universal icon position/dimensions
+  // Universal info icon position/dimensions (Only inside live game rooms)
   float iconX = 740;
   float iconY = 8;
   float iconSize = 30;
@@ -35,6 +34,13 @@ public class Game extends PApplet {
   float exitY = 530;
   float exitW = 50;
   float exitH = 50;
+
+  // --- NEW FIELDS: High Score Tracker & Clear Icon Positions ---
+  int highestBalance = 1000; // All-time highest balance cap tracker
+  float resetX = 20;         // X coordinate for Clear Highscore Button
+  float resetY = 20;         // Y coordinate for Clear Highscore Button
+  float resetW = 140;        // Width of Clear Highscore Button
+  float resetH = 35;         // Height of Clear Highscore Button
 
   PApplet p;
   public static final int APP_WIDTH = 800;
@@ -98,7 +104,6 @@ public class Game extends PApplet {
     diceImages.put(5, loadImage("images/fiveSide.png"));
     diceImages.put(6, loadImage("images/sixSide.png"));
 
-    // FIXED IMAGE PATHS: Appended "images/" directory prefix to properly target data files
     blackjackIconImage = loadImage("images/Blackjack_Icon.png");
     diceIconImage = loadImage("images/High-or-Low_Icon.png");
     exitIconImage = loadImage("images/enter_Icon.png");
@@ -112,6 +117,11 @@ public class Game extends PApplet {
   @Override
   public void draw() {
     background(20, 110, 50); 
+    
+    // MONITOR AND TRACK BALANCE LIVE: Check against all-time records across any screen
+    if (sharedAccount.getBalance() > highestBalance) {
+        highestBalance = sharedAccount.getBalance();
+    }
     
     // --- Screen Router ---
     if (gameMode == 0) {
@@ -142,26 +152,46 @@ public class Game extends PApplet {
   }
 
   /**
-   * Renders the initial landing page featuring selection options
+   * Renders the initial landing page featuring selection options and performance history metrics
    */
   private void drawMainMenu() {
     if (mainMenuBackgroundImage != null) {
-      image(mainMenuBackgroundImage, 0, 0, width, height);
-  } else {
-      background(20, 110, 50); // Fallback green background if image fails to load
-  }
+        image(mainMenuBackgroundImage, 0, 0, width, height);
+    } else {
+        background(20, 110, 50); 
+    }
+    
+    // RENDER NEW GUI COMPONENT: Clear Highscore Interactive Icon (Main Menu Only)
+    stroke(255, 100, 100);
+    strokeWeight(1);
+    fill(45, 25, 25, 200);
+    rect(resetX, resetY, resetW, resetH, 6);
+    noStroke();
+    
+    fill(255, 150, 150);
+    textSize(12);
     textAlign(CENTER, CENTER);
-    fill(215);
+    text("Clear Highscore", resetX + resetW / 2f, resetY + resetH / 2f);
+
+    // Main Menu Typography Titles
+    textAlign(CENTER, CENTER);
+    fill(255);
     textSize(36);
-    text("BACK-ALLEY CASINO", width / 2, 270);
-    textSize(16);
+    text("BACK-ALLEY CASINO", width / 2, 80);
+    
+    // DISPLAY HIGHEST BALANCE METRIC
+    fill(255, 215, 0);
+    textSize(18);
+    text("Highest Balance: $" + highestBalance, width / 2, 130);
+    
+    textSize(14);
     fill(200);
-    text("Click on an icon to play", width / 2, 320);
+    text("Click on an icon to play", width / 2, 165);
 
     // Dynamic placement positions for selection buttons
     float boxW = 160;
     float boxH = 200;
-    float blackjackBtnX = width / 2 - 230;
+    float blackjackBtnX = width / 2 - 250;
     float diceBtnX = width / 2 + 120;
     float btnY = height - 250;
 
@@ -174,7 +204,7 @@ public class Game extends PApplet {
     }
     fill(255);
     textSize(18);
-    text("Blackjack", blackjackBtnX + boxW / 2 - 20, btnY + boxH + 25);
+    text("Blackjack", blackjackBtnX + boxW / 2, btnY + boxH + 25);
 
     // Dice Selection Option
     if (diceIconImage != null) {
@@ -206,9 +236,6 @@ public class Game extends PApplet {
     textAlign(LEFT);
   }
 
-  /**
-   * Renders the exit door asset enabling user redirection back to selection arena
-   */
   private void drawExitButton() {
     if (exitIconImage != null) {
         image(exitIconImage, exitX, exitY, exitW, exitH);
@@ -327,11 +354,17 @@ public class Game extends PApplet {
 
   @Override
   public void mousePressed() {
-    // 1. Click Management inside Main Menu Room State
+    // 1. Click Management inside Main Menu State
     if (gameMode == 0) {
+        // NEW EVENT DETECTOR: Check if Clear Highscore button is hit on the Main Menu
+        if (mouseX >= resetX && mouseX <= resetX + resetW && mouseY >= resetY && mouseY <= resetY + resetH) {
+            highestBalance = 1000;
+            return; // Terminate checking so we don't accidentally select underlying assets
+        }
+
         float boxW = 160;
         float boxH = 200;
-        float blackjackBtnX = width / 2 - 230;
+        float blackjackBtnX = width / 2 - 250;
         float diceBtnX = width / 2 + 120;
         float btnY = height - 250;
 
@@ -361,15 +394,13 @@ public class Game extends PApplet {
             }
         } 
         else {
-            // Check if info icon is clicked
             if (mouseX >= iconX && mouseX <= iconX + iconSize && mouseY >= iconY && mouseY <= iconY + iconSize) {
                 scrollY = 0; 
                 showRules = true;
             }
-            // Check if exit icon is clicked (Restricted to when a round isn't actively running)
             else if (mouseX >= exitX && mouseX <= exitX + exitW && mouseY >= exitY && mouseY <= exitY + exitH) {
                 if ((gameMode == 1 && blackjack.isRoundOver()) || (gameMode == 2 && diceGame.isRoundOver())) {
-                    gameMode = 0; // Routes back to the selection hub screen
+                    gameMode = 0; 
                 }
             }
         }
