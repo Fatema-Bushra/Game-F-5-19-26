@@ -1,5 +1,6 @@
 import processing.core.PApplet;
 import processing.core.PImage;
+import processing.event.MouseEvent; // Added for explicit MouseWheel handling
 import java.util.HashMap;
 
 public class Game extends PApplet {
@@ -11,6 +12,20 @@ public class Game extends PApplet {
   // --- High-Low Dice Assets ---
   PImage cupImage;
   HashMap<Integer, PImage> diceImages;
+
+  // --- Information Icons & Pop-up States ---
+  PImage blackjackIconImage;
+  PImage diceIconImage;
+  boolean showRules = false; // Controls rule modal overlay visibility
+  
+  // --- Scroll Tracking Fields ---
+  float scrollY = 0;          // Tracks current scroll displacement
+  float maxScrollY = 320;     // Increased to accommodate extended rules text safely
+  
+  // Universal icon position/dimensions
+  float iconX = 740;
+  float iconY = 8;
+  float iconSize = 30;
 
   PApplet p;
   public static final int APP_WIDTH = 800;
@@ -67,7 +82,7 @@ public class Game extends PApplet {
         }
     }
     
-    // 4. Load High-Low Dice Assets (FIXED PATH DIRECTIONS HERE)
+    // 4. Load High-Low Dice Assets
     diceImages = new HashMap<Integer, PImage>();
     cupImage = loadImage("images/cup.png");
     diceImages.put(1, loadImage("images/oneSide.png"));
@@ -76,6 +91,10 @@ public class Game extends PApplet {
     diceImages.put(4, loadImage("images/fourSide.png"));
     diceImages.put(5, loadImage("images/fiveSide.png"));
     diceImages.put(6, loadImage("images/sixSide.png"));
+
+    // 5. Load Information Icons from the 'images/' directory folder
+    blackjackIconImage = loadImage("images/blackJackIcon.png");
+    diceIconImage = loadImage("images/diceIcon.png");
 
     // Default cup positions
     cupX = width / 2f;
@@ -103,6 +122,14 @@ public class Game extends PApplet {
     } else if (gameMode == 2) {
         drawDiceScreen();
     }
+
+    // Render Context-Specific Info Icon
+    drawActiveInfoIcon();
+    
+    // Render rule pop-up modal overlay if active
+    if (showRules) {
+        drawRulesModal();
+    }
   }
 
   private void drawGlobalHeader() {
@@ -110,14 +137,160 @@ public class Game extends PApplet {
     rect(0, 0, width, 45);
     fill(255);
     textSize(14);
-    text("BALANCE: $" + sharedAccount.getBalance(), 20, 28);
+    text("WALLET BALANCE: $" + sharedAccount.getBalance(), 20, 28);
     
     textAlign(RIGHT);
     fill(gameMode == 1 ? color(255, 215, 0) : 180);
-    text("[Press B] Blackjack Table", width - 220, 28);
+    text("[Press B] Blackjack Table", width - 260, 28);
     fill(gameMode == 2 ? color(255, 215, 0) : 180);
-    text("[Press D] High-Low Dice", width - 30, 28);
+    text("[Press D] High-Low Dice", width - 80, 28);
     textAlign(LEFT);
+  }
+
+  /**
+   * Renders the information icon asset designated for the active room mode
+   */
+  private void drawActiveInfoIcon() {
+    PImage activeIcon = (gameMode == 1) ? blackjackIconImage : diceIconImage;
+
+    if (activeIcon != null) {
+        image(activeIcon, iconX, iconY, iconSize, iconSize);
+    } else {
+        // Geometric colorful fallback text if an image asset path is missing locally
+        fill(gameMode == 1 ? color(0, 150, 255) : color(255, 100, 0));
+        ellipse(iconX + iconSize/2, iconY + iconSize/2, iconSize, iconSize);
+        fill(255);
+        textSize(16);
+        textAlign(CENTER, CENTER);
+        text("?", iconX + iconSize/2, iconY + iconSize/2);
+        textAlign(LEFT, BASELINE);
+    }
+  }
+
+  /**
+   * Universal Pop-up modal containing rules text formatted by room with custom scrolling
+   */
+  private void drawRulesModal() {
+    // Dim background layers
+    fill(0, 180);
+    rect(0, 0, width, height);
+
+    float modalW = 520;
+    float modalH = 340;
+    float modalX = (width - modalW) / 2;
+    float modalY = (height - modalH) / 2;
+
+    // Draw main frame background
+    fill(30, 40, 45);
+    stroke(255, 215, 0);
+    strokeWeight(2);
+    rect(modalX, modalY, modalW, modalH, 12);
+    noStroke();
+
+    // Headers text (Stationary, doesn't scroll)
+    fill(255, 215, 0);
+    textSize(22);
+    textAlign(CENTER);
+
+    String textBody = "";
+
+    if (gameMode == 1) {
+        text("BLACKJACK RULES", width / 2, modalY + 45);
+        textBody = 
+            "- Use your MOUSE WHEEL to scroll content.\n" +
+            "- Objective: Get to 21.\n\n" +
+            "- Card Values:\n" +
+            "   * Face Cards (J, Q, K) count as 10 points.\n" +
+            "   * Aces scale dynamically as 1 or 11. For example, If a player has a Jack and an Ace, their Ace would be worth 11 points, but if they were to hit and get a King, their Ace would be worth 1 point.\n" +
+            "   * Numerical cards equal their face value.\n\n" +
+            "- Comparisons:\n" +
+            "   * Natural 21's (automatically receiving a hand that's worth 21 points without needing to hit) are worth more than made 21's (a player needed to take cards in order to make their hand worth 21 points).\n" + 
+            "   * Natural 21 vs Natural 21 = Push(Tie) --> You'll get your bet amount back.\n" + 
+            "   * Natural 21 vs Made 21 = Natural side wins --> if you are the one with the natural hand you'll receive double your bet amount, if you're the one with the made hand you'll lose your bet amount.\n" + 
+            "   * Made 21 vs Made 21 = Push(Tie) --> You'll get your bet amount back.\n" +
+            "   * The side that goes over 21 automatically loses.\n\n" +
+            "- Player Actions:\n" +
+            "   * Press [H] to Hit (Take a card).\n" +
+            "   * Press [S] to Stand (Hold and end turn).\n\n" +
+            "➡ Click anywhere OUTSIDE this box to return to the game.";
+    } else {
+        text("HIGH-OR-LOW RULES", width / 2, modalY + 45);
+        textBody = 
+            "- Use your MOUSE WHEEL to scroll content.\n" +
+            "- Objective: Predict whether the sum of two dice will be higher or lower than the displayed  Value.\n\n" +
+            "- The Target Value is carried over from the total of the prior round's roll.\n\n" +
+            "- Player Controls:\n" +
+            "   * Press [H] to bet the total roll will be HIGHER than target.\n" +
+            "   * Press [L] to bet the total roll will be LOWER than target.\n\n" +
+            "- Payout Multipliers:\n" +
+            "   * Correct guesses pay out double your bet amount.\n" +
+            "   * Incorrect guesses will lead you to lose the bet amount." +
+            "   * On the chance that the rolled value is the same as the target value, you will get your bet amount returned." +
+            "   * Rolling an exact tie with the target triggers a Push (wager returned).\n\n" +
+            "- Click anywhere OUTSIDE this box to return to the game.";
+    }
+
+    // Prepare clipping mask window bounds for scrollable body text area
+    float clipX = modalX + 35;
+    float clipY = modalY + 70;
+    float clipW = modalW - 70;
+    float clipH = modalH - 95;
+
+    // Restrict text rendering strictly into the container area
+    clip(clipX, clipY, clipW, clipH);
+
+    fill(240);
+    textSize(14);
+    textAlign(LEFT);
+    
+    // Apply scrolling offset positioning transformation to text block (height bounding block scaled to 850)
+    text(textBody, clipX, clipY - scrollY, clipW, 850);
+    
+    // Deactivate clipping context so other game layout assets draw normally
+    noClip();
+    textAlign(LEFT);
+  }
+
+  /**
+   * Catches user scroll input to move rules page view cleanly up and down
+   */
+  @Override
+  public void mouseWheel(MouseEvent event) {
+    if (showRules) {
+        float count = event.getCount(); // Returns positive when scrolling down, negative up
+        scrollY += count * 15;          // Adjust scrolling step speed
+        
+        // Clamp bounds to prevent scrolling out of viewport completely
+        if (scrollY < 0) {
+            scrollY = 0;
+        }
+        if (scrollY > maxScrollY) {
+            scrollY = maxScrollY;
+        }
+    }
+  }
+
+  @Override
+  public void mousePressed() {
+    // Handle click logic when the modal is open
+    if (showRules) {
+        float modalW = 520;
+        float modalH = 340;
+        float modalX = (width - modalW) / 2;
+        float modalY = (height - modalH) / 2;
+
+        // Turn off pop-up if the user clicks anywhere outside its coordinates
+        if (mouseX < modalX || mouseX > modalX + modalW || mouseY < modalY || mouseY > modalY + modalH) {
+            showRules = false;
+        }
+    } 
+    // Handle click logic when the modal is closed (clicking the info icon)
+    else {
+        if (mouseX >= iconX && mouseX <= iconX + iconSize && mouseY >= iconY && mouseY <= iconY + iconSize) {
+            scrollY = 0; // Reset scroll view location back to the very top header level
+            showRules = true;
+        }
+    }
   }
 
   /**
@@ -145,7 +318,7 @@ public class Game extends PApplet {
     if (enteringBet) {
         fill(255, 255, 150);
         textSize(24);
-        text("Type your bet: $" + bettingInput + "_", 50, 180);
+        text("Type your blackjack bet: $" + bettingInput + "_", 50, 180);
         textSize(14);
         fill(200);
         text("Type digits [0-9], BACKSPACE to edit, ENTER to confirm deal.", 50, 220);
@@ -207,23 +380,22 @@ public class Game extends PApplet {
 
     textSize(24);
     fill(255);
-    text("BALANCE: $" + sharedAccount.getBalance(), 50, 80);
-    text("Current Value: " + diceGame.getTargetValue(), 50, 115);
+    text("Dice Room Target Value: " + diceGame.getTargetValue(), 50, 80);
 
     if (enteringBet) {
         fill(255, 255, 150);
-        text("Type your bet: $" + bettingInput + "_", 50, 150);
+        text("Type your High-Low bet: $" + bettingInput + "_", 50, 150);
         targetCupX = width / 2f;
         targetCupY = height / 2f;
     } 
     else if (!enteringBet && !diceGame.isRoundOver()) {
         fill(255, 255, 150);
-        text("Will dice roll HIGHER or LOWER than " + diceGame.getTargetValue() + "?", 50, 150);
+        text("Will dice roll HIGHER or LOWER than " + diceGame.getTargetValue() + "?", 50, 140);
         textSize(16);
         fill(255);
         text("Press 'H' for HIGHER  |  Press 'L' for LOWER", 50, 180);
         fill(255, 215, 0);
-        text("Current Bet: $" + diceGame.getCurrentBet(), 50, 210);
+        text("Current Bet Locked: $" + diceGame.getCurrentBet(), 50, 210);
         
         targetCupX = width - 120;
         targetCupY = 160;
@@ -237,7 +409,7 @@ public class Game extends PApplet {
         text(msg, 50, 140);
         textSize(16);
         fill(255);
-        text("Press ENTER to continue.", 50, 180);
+        text("Press ENTER to change target benchmark and continue.", 50, 180);
     }
 
     if (!enteringBet) {
@@ -289,11 +461,16 @@ public class Game extends PApplet {
     text("BANKRUPT!", 50, 140);
     textSize(18);
     fill(255);
-    text("Press 'R' to claim a fresh $1000.", 50, 180);
+    text("Press 'R' to completely wipe profiles and claim a fresh $1000 credit line.", 50, 180);
   }
 
   @Override
   public void keyPressed() {
+    // Ignore gameplay hotkeys if rules window overlay modal is open
+    if (showRules) {
+        return;
+    }
+
     // Global Profile Hard Reboot
     if (key == 'r' || key == 'R') {
         sharedAccount = new BankAccount(1000);
