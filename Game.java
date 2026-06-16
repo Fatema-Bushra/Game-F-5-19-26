@@ -161,9 +161,9 @@ public class Game extends PApplet {
     // Dynamic placement positions for selection buttons
     float boxW = 160;
     float boxH = 200;
-    float blackjackBtnX = width / 2 - 200;
-    float diceBtnX = width / 2 + 40;
-    float btnY = height / 2 - 60;
+    float blackjackBtnX = width / 2 - 230;
+    float diceBtnX = width / 2 + 120;
+    float btnY = height - 250;
 
     // Blackjack Selection Option
     if (blackjackIconImage != null) {
@@ -174,7 +174,7 @@ public class Game extends PApplet {
     }
     fill(255);
     textSize(18);
-    text("Blackjack", blackjackBtnX + boxW / 2, btnY + boxH + 25);
+    text("Blackjack", blackjackBtnX + boxW / 2 - 20, btnY + boxH + 25);
 
     // Dice Selection Option
     if (diceIconImage != null) {
@@ -331,9 +331,9 @@ public class Game extends PApplet {
     if (gameMode == 0) {
         float boxW = 160;
         float boxH = 200;
-        float blackjackBtnX = width / 2 - 200;
-        float diceBtnX = width / 2 + 40;
-        float btnY = height / 2 - 60;
+        float blackjackBtnX = width / 2 - 230;
+        float diceBtnX = width / 2 + 120;
+        float btnY = height - 250;
 
         // Check if Blackjack icon is pressed
         if (mouseX >= blackjackBtnX && mouseX <= blackjackBtnX + boxW && mouseY >= btnY && mouseY <= btnY + boxH) {

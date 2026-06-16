@@ -1,6 +1,6 @@
 public class Blackjack {
 
-    private Player player; // Restored the original Player tracking logic
+    private Player player; 
     private Hand dealerHand;
     private Deck deck;
     private int currentBet;
@@ -8,7 +8,7 @@ public class Blackjack {
     private boolean isRoundOver;
 
     public Blackjack(BankAccount account) {
-        this.player = new Player(account); // Links Player to the shared bank reference
+        this.player = new Player(account); 
         this.gameMessage = "Place your bet to begin!";
         this.isRoundOver = true;
     }
@@ -20,6 +20,10 @@ public class Blackjack {
         }
 
         this.currentBet = bet;
+        
+        // Deduct the bet amount upfront
+        player.loseBet(this.currentBet); 
+
         this.deck = new Deck();
         this.player.resetHand();
         this.dealerHand = new Hand();
@@ -41,7 +45,6 @@ public class Blackjack {
 
         if (player.getHand().isBust()) {
             gameMessage = "You busted! Dealer wins.";
-            player.loseBet(currentBet);
             isRoundOver = true;
         }
     }
@@ -68,36 +71,36 @@ public class Blackjack {
 
         if (player.getHand().isBust()) {
             gameMessage = "You busted! Dealer wins.";
-            player.loseBet(currentBet);
         } 
         else if (dealerHand.isBust()) {
             gameMessage = "Dealer busted! You win!";
-            player.winBet(currentBet);
+            player.winBet(currentBet * 2); // Return bet + 1x profit
         } 
         else if (playerNatural && !dealerNatural) {
             gameMessage = "Natural 21! You win!";
-            player.winBet(currentBet);
+            player.winBet(currentBet * 2); // Return bet + 1x profit
         } 
         else if (dealerNatural && !playerNatural) {
             gameMessage = "Dealer natural 21 wins.";
-            player.loseBet(currentBet);
         } 
         else if (playerNatural && dealerNatural) {
             gameMessage = "Tie! Both got Natural 21.";
+            player.winBet(currentBet); // Push: Return initial bet
         } 
         else if (playerMade21 && dealerMade21) {
             gameMessage = "Tie! Both made 21.";
+            player.winBet(currentBet); // Push: Return initial bet
         } 
         else if (playerTotal > dealerTotal) {
             gameMessage = "You win!";
-            player.winBet(currentBet);
+            player.winBet(currentBet * 2); // Return bet + 1x profit
         } 
         else if (playerTotal < dealerTotal) {
             gameMessage = "Dealer wins.";
-            player.loseBet(currentBet);
         } 
         else {
             gameMessage = "Push (Tie).";
+            player.winBet(currentBet); // Push: Return initial bet
         }
     }
 

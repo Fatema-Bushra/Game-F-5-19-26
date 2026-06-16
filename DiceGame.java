@@ -28,39 +28,37 @@ public class DiceGame {
     }
 
     public boolean lockBet(int bet) {
-        if (bet <= 0 || bet > account.getBalance()) {
-            gameMessage = "Invalid Bet! Check your bank balance.";
-            return false;
-        }
-        this.currentBet = bet;
-        this.isRoundOver = false;
-        return true;
+    if (bet <= 0 || bet > account.getBalance()) {
+        gameMessage = "Invalid Bet! Check your bank balance.";
+        return false;
     }
-
+    this.currentBet = bet;
+    
+    // TAKE OUT MONEY IMMEDIATELY
+    account.withdraw(bet); 
+    
+    this.isRoundOver = false;
+    return true;
+}
     public void playRound(boolean guessHigh) {
-        this.die1 = rand.nextInt(6) + 1;
-        this.die2 = rand.nextInt(6) + 1;
-        int totalRoll = die1 + die2;
+    this.die1 = rand.nextInt(6) + 1;
+    this.die2 = rand.nextInt(6) + 1;
+    int totalRoll = die1 + die2;
 
-        // Rule Case A: Push condition (Equal values)
-        if (totalRoll == targetValue) {
-            gameMessage = "Tie! Dice matched target value. Bet Returned.";
-            isRoundOver = true;
-        }
-        // Rule Case B: Player Guess Win Condition (Double Bet Payout)
-        else if ((guessHigh && totalRoll > targetValue) || (!guessHigh && totalRoll < targetValue)) {
-            int netWin = currentBet * 2;
-            account.deposit(netWin);
-            gameMessage = "Amount Won: +$" + netWin;
-            isRoundOver = true;
-        }
-        // Rule Case C: Failure State (Lose Bet)
-        else {
-            account.withdraw(currentBet);
-            gameMessage = "Amount Lost: -$" + currentBet;
-            isRoundOver = true;
-        }
+    if (totalRoll == targetValue) {
+        account.deposit(currentBet); // PUSH: Return original bet
+        gameMessage = "Tie! Bet Returned.";
     }
+    else if ((guessHigh && totalRoll > targetValue) || (!guessHigh && totalRoll < targetValue)) {
+        account.deposit(currentBet * 2); // WIN: Return original bet + $1000 profit ($2000 total)
+        gameMessage = "Amount Won: +$" + (currentBet * 2);
+    }
+    else {
+        // LOSS: Do nothing, money was already deducted!
+        gameMessage = "Amount Lost: -$" + currentBet;
+    }
+    isRoundOver = true;
+}
 
     public void prepareNextRound() {
         if (account.getBalance() > 0) {

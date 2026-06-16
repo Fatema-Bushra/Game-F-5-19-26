@@ -16,8 +16,9 @@ public class Player {
         return account.getBalance();
     }
 
-    public void winBet(int bet) {
-        account.deposit((bet * 2)); // Net addition matching original payout mechanics
+    // FIX: Remove the hidden '* 2' multiplier so it deposits the exact payout passed from Blackjack
+    public void winBet(int amountToDeposit) {
+        account.deposit(amountToDeposit); 
     }
 
     public void loseBet(int bet) {
