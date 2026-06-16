@@ -1,31 +1,40 @@
+import java.util.HashMap;
+
 import processing.core.PApplet;
 import processing.core.PImage;
-import processing.event.MouseEvent; // Added for explicit MouseWheel handling
-import java.util.HashMap;
+import processing.event.MouseEvent;
 
 public class Game extends PApplet {
 
   // --- Visual Layout Fields ---
   HashMap<String, PImage> cardImages;
   PImage backOfCardImage;
+  PImage mainMenuBackgroundImage;
   
   // --- High-Low Dice Assets ---
   PImage cupImage;
   HashMap<Integer, PImage> diceImages;
 
-  // --- Information Icons & Pop-up States ---
+  // --- Information Icons, Navigation & Pop-up States ---
   PImage blackjackIconImage;
   PImage diceIconImage;
-  boolean showRules = false; // Controls rule modal overlay visibility
+  PImage exitIconImage; 
+  boolean showRules = false; 
   
   // --- Scroll Tracking Fields ---
-  float scrollY = 0;          // Tracks current scroll displacement
-  float maxScrollY = 320;     // Increased to accommodate extended rules text safely
+  float scrollY = 0;          
+  float maxScrollY = 320;     
   
   // Universal icon position/dimensions
   float iconX = 740;
   float iconY = 8;
   float iconSize = 30;
+
+  // Exit button positions
+  float exitX = 20;
+  float exitY = 530;
+  float exitW = 50;
+  float exitH = 50;
 
   PApplet p;
   public static final int APP_WIDTH = 800;
@@ -39,12 +48,12 @@ public class Game extends PApplet {
   DiceGame diceGame;
   
   // --- Global State Controller ---
-  // 1 = Original Blackjack Screen, 2 = High-Low Dice Screen
-  int gameMode = 1; 
+  // 0 = Main Menu, 1 = Blackjack Screen, 2 = High-Low Dice Screen
+  int gameMode = 0; 
 
   // --- Input State Fields ---
-  String bettingInput = "";     // Temporarily holds the numbers the player types
-  boolean enteringBet = true;   // Tracks if the player is currently typing a bet
+  String bettingInput = "";     
+  boolean enteringBet = true;   
   
   // --- Cup Animation Fields ---
   float cupX, cupY;
@@ -58,16 +67,14 @@ public class Game extends PApplet {
 
   @Override
   public void setup() {
-    // 1. Initialize centralized tracking wallet
     sharedAccount = new BankAccount(1000);
 
-    // 2. Instantiate backends passing the shared wallet instance
     blackjack = new Blackjack(sharedAccount);
     diceGame = new DiceGame(sharedAccount);
     
-    // 3. Load Blackjack Card Assets
     cardImages = new HashMap<String, PImage>();
     backOfCardImage = loadImage("images/cardBack.png"); 
+    mainMenuBackgroundImage = loadImage("images/nesBackwout.png");
 
     String[] suits = {"Hearts", "Diamonds", "Clubs", "Spades"};
     String[] ranks = {"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"};
@@ -82,7 +89,6 @@ public class Game extends PApplet {
         }
     }
     
-    // 4. Load High-Low Dice Assets
     diceImages = new HashMap<Integer, PImage>();
     cupImage = loadImage("images/cup.png");
     diceImages.put(1, loadImage("images/oneSide.png"));
@@ -92,11 +98,11 @@ public class Game extends PApplet {
     diceImages.put(5, loadImage("images/fiveSide.png"));
     diceImages.put(6, loadImage("images/sixSide.png"));
 
-    // 5. Load Information Icons from the 'images/' directory folder
-    blackjackIconImage = loadImage("images/blackJackIcon.png");
-    diceIconImage = loadImage("images/diceIcon.png");
+    // FIXED IMAGE PATHS: Appended "images/" directory prefix to properly target data files
+    blackjackIconImage = loadImage("images/Blackjack_Icon.png");
+    diceIconImage = loadImage("images/High-or-Low_Icon.png");
+    exitIconImage = loadImage("images/enter_Icon.png");
 
-    // Default cup positions
     cupX = width / 2f;
     cupY = height / 2f;
     targetCupX = cupX;
@@ -105,31 +111,82 @@ public class Game extends PApplet {
 
   @Override
   public void draw() {
-    background(20, 110, 50); // Poker room green felt
+    background(20, 110, 50); 
     
-    // Draw Global Persistent Game Selector Header
+    // --- Screen Router ---
+    if (gameMode == 0) {
+        drawMainMenu();
+        return; 
+    }
+
     drawGlobalHeader();
     
-    // Global Bankruptcy Check
     if (sharedAccount.getBalance() <= 0 && ((gameMode == 1 && blackjack.isRoundOver()) || (gameMode == 2 && diceGame.isRoundOver()))) {
         drawBankruptcyScreen();
+        drawExitButton();
         return;
     }
 
-    // --- Screen Router ---
     if (gameMode == 1) {
         drawOriginalBlackjackScreen();
     } else if (gameMode == 2) {
         drawDiceScreen();
     }
 
-    // Render Context-Specific Info Icon
     drawActiveInfoIcon();
+    drawExitButton();
     
-    // Render rule pop-up modal overlay if active
     if (showRules) {
         drawRulesModal();
     }
+  }
+
+  /**
+   * Renders the initial landing page featuring selection options
+   */
+  private void drawMainMenu() {
+    if (mainMenuBackgroundImage != null) {
+      image(mainMenuBackgroundImage, 0, 0, width, height);
+  } else {
+      background(20, 110, 50); // Fallback green background if image fails to load
+  }
+    textAlign(CENTER, CENTER);
+    fill(255);
+    textSize(36);
+    text("BACK-ALLEY CASINO", width / 2, 80);
+    textSize(16);
+    fill(200);
+    text("Click on an icon to play", width / 2, 130);
+
+    // Dynamic placement positions for selection buttons
+    float boxW = 160;
+    float boxH = 200;
+    float blackjackBtnX = width / 2 - 200;
+    float diceBtnX = width / 2 + 40;
+    float btnY = height / 2 - 60;
+
+    // Blackjack Selection Option
+    if (blackjackIconImage != null) {
+        image(blackjackIconImage, blackjackBtnX, btnY, boxW, boxH);
+    } else {
+        fill(30, 40, 45);
+        rect(blackjackBtnX, btnY, boxW, boxH, 10);
+    }
+    fill(255);
+    textSize(18);
+    text("Blackjack", blackjackBtnX + boxW / 2, btnY + boxH + 25);
+
+    // Dice Selection Option
+    if (diceIconImage != null) {
+        image(diceIconImage, diceBtnX, btnY, boxW, boxH);
+    } else {
+        fill(30, 40, 45);
+        rect(diceBtnX, btnY, boxW, boxH, 10);
+    }
+    fill(255);
+    text("High-or-Low", diceBtnX + boxW / 2, btnY + boxH + 25);
+    
+    textAlign(LEFT, BASELINE);
   }
 
   private void drawGlobalHeader() {
@@ -137,26 +194,41 @@ public class Game extends PApplet {
     rect(0, 0, width, 45);
     fill(255);
     textSize(14);
-    text("WALLET BALANCE: $" + sharedAccount.getBalance(), 20, 28);
+    text("CHECKING BALANCE: $" + sharedAccount.getBalance(), 20, 28);
     
     textAlign(RIGHT);
-    fill(gameMode == 1 ? color(255, 215, 0) : 180);
-    text("[Press B] Blackjack Table", width - 260, 28);
-    fill(gameMode == 2 ? color(255, 215, 0) : 180);
-    text("[Press D] High-Low Dice", width - 80, 28);
+    fill(255, 215, 0);
+    if (gameMode == 1) {
+        text("Blackjack Instructions", width - 80, 28);
+    } else if (gameMode == 2) {
+        text("High-or-Low Instructions", width - 100, 28);
+    }
     textAlign(LEFT);
   }
 
   /**
-   * Renders the information icon asset designated for the active room mode
+   * Renders the exit door asset enabling user redirection back to selection arena
    */
+  private void drawExitButton() {
+    if (exitIconImage != null) {
+        image(exitIconImage, exitX, exitY, exitW, exitH);
+    } else {
+        fill(150, 50, 50);
+        rect(exitX, exitY, exitW, exitH, 5);
+        fill(255);
+        textSize(12);
+        textAlign(CENTER, CENTER);
+        text("EXIT", exitX + exitW/2, exitY + exitH/2);
+        textAlign(LEFT, BASELINE);
+    }
+  }
+
   private void drawActiveInfoIcon() {
     PImage activeIcon = (gameMode == 1) ? blackjackIconImage : diceIconImage;
 
     if (activeIcon != null) {
         image(activeIcon, iconX, iconY, iconSize, iconSize);
     } else {
-        // Geometric colorful fallback text if an image asset path is missing locally
         fill(gameMode == 1 ? color(0, 150, 255) : color(255, 100, 0));
         ellipse(iconX + iconSize/2, iconY + iconSize/2, iconSize, iconSize);
         fill(255);
@@ -167,11 +239,7 @@ public class Game extends PApplet {
     }
   }
 
-  /**
-   * Universal Pop-up modal containing rules text formatted by room with custom scrolling
-   */
   private void drawRulesModal() {
-    // Dim background layers
     fill(0, 180);
     rect(0, 0, width, height);
 
@@ -180,14 +248,12 @@ public class Game extends PApplet {
     float modalX = (width - modalW) / 2;
     float modalY = (height - modalH) / 2;
 
-    // Draw main frame background
     fill(30, 40, 45);
     stroke(255, 215, 0);
     strokeWeight(2);
     rect(modalX, modalY, modalW, modalH, 12);
     noStroke();
 
-    // Headers text (Stationary, doesn't scroll)
     fill(255, 215, 0);
     textSize(22);
     textAlign(CENTER);
@@ -195,72 +261,61 @@ public class Game extends PApplet {
     String textBody = "";
 
     if (gameMode == 1) {
-        text("BLACKJACK RULES", width / 2, modalY + 45);
+        text("INSTRUCTIONS", width / 2, modalY + 45);
         textBody = 
             "- Use your MOUSE WHEEL to scroll content.\n" +
             "- Objective: Get to 21.\n\n" +
             "- Card Values:\n" +
             "   * Face Cards (J, Q, K) count as 10 points.\n" +
-            "   * Aces scale dynamically as 1 or 11. For example, If a player has a Jack and an Ace, their Ace would be worth 11 points, but if they were to hit and get a King, their Ace would be worth 1 point.\n" +
+            "   * Aces scale dynamically as 1 or 11.\n" +
             "   * Numerical cards equal their face value.\n\n" +
             "- Comparisons:\n" +
-            "   * Natural 21's (automatically receiving a hand that's worth 21 points without needing to hit) are worth more than made 21's (a player needed to take cards in order to make their hand worth 21 points).\n" + 
-            "   * Natural 21 vs Natural 21 = Push(Tie) --> You'll get your bet amount back.\n" + 
-            "   * Natural 21 vs Made 21 = Natural side wins --> if you are the one with the natural hand you'll receive double your bet amount, if you're the one with the made hand you'll lose your bet amount.\n" + 
-            "   * Made 21 vs Made 21 = Push(Tie) --> You'll get your bet amount back.\n" +
+            "   * Natural 21's are worth more than made 21's.\n" + 
+            "   * Natural 21 vs Natural 21 = Push(Tie).\n" + 
             "   * The side that goes over 21 automatically loses.\n\n" +
             "- Player Actions:\n" +
             "   * Press [H] to Hit (Take a card).\n" +
             "   * Press [S] to Stand (Hold and end turn).\n\n" +
-            "➡ Click anywhere OUTSIDE this box to return to the game.";
+            "- Click anywhere OUTSIDE this box to return to the game.";
     } else {
-        text("HIGH-OR-LOW RULES", width / 2, modalY + 45);
+        text("INSTRUCTIONS", width / 2, modalY + 45);
         textBody = 
             "- Use your MOUSE WHEEL to scroll content.\n" +
-            "- Objective: Predict whether the sum of two dice will be higher or lower than the displayed  Value.\n\n" +
+            "- Objective: Predict whether the sum of two dice will be higher or lower than the displayed Value.\n\n" +
             "- The Target Value is carried over from the total of the prior round's roll.\n\n" +
             "- Player Controls:\n" +
             "   * Press [H] to bet the total roll will be HIGHER than target.\n" +
             "   * Press [L] to bet the total roll will be LOWER than target.\n\n" +
             "- Payout Multipliers:\n" +
             "   * Correct guesses pay out double your bet amount.\n" +
-            "   * Incorrect guesses will lead you to lose the bet amount." +
-            "   * On the chance that the rolled value is the same as the target value, you will get your bet amount returned." +
-            "   * Rolling an exact tie with the target triggers a Push (wager returned).\n\n" +
+            "   * Incorrect guesses lose the bet amount.\n" +
+            "   * Exact ties prompt a Push outcome.\n\n" +
             "- Click anywhere OUTSIDE this box to return to the game.";
     }
 
-    // Prepare clipping mask window bounds for scrollable body text area
     float clipX = modalX + 35;
     float clipY = modalY + 70;
     float clipW = modalW - 70;
     float clipH = modalH - 95;
 
-    // Restrict text rendering strictly into the container area
     clip(clipX, clipY, clipW, clipH);
 
     fill(240);
     textSize(14);
     textAlign(LEFT);
     
-    // Apply scrolling offset positioning transformation to text block (height bounding block scaled to 850)
     text(textBody, clipX, clipY - scrollY, clipW, 850);
     
-    // Deactivate clipping context so other game layout assets draw normally
     noClip();
     textAlign(LEFT);
   }
 
-  /**
-   * Catches user scroll input to move rules page view cleanly up and down
-   */
   @Override
   public void mouseWheel(MouseEvent event) {
     if (showRules) {
-        float count = event.getCount(); // Returns positive when scrolling down, negative up
-        scrollY += count * 15;          // Adjust scrolling step speed
+        float count = event.getCount(); 
+        scrollY += count * 15;          
         
-        // Clamp bounds to prevent scrolling out of viewport completely
         if (scrollY < 0) {
             scrollY = 0;
         }
@@ -272,37 +327,61 @@ public class Game extends PApplet {
 
   @Override
   public void mousePressed() {
-    // Handle click logic when the modal is open
-    if (showRules) {
-        float modalW = 520;
-        float modalH = 340;
-        float modalX = (width - modalW) / 2;
-        float modalY = (height - modalH) / 2;
+    // 1. Click Management inside Main Menu Room State
+    if (gameMode == 0) {
+        float boxW = 160;
+        float boxH = 200;
+        float blackjackBtnX = width / 2 - 200;
+        float diceBtnX = width / 2 + 40;
+        float btnY = height / 2 - 60;
 
-        // Turn off pop-up if the user clicks anywhere outside its coordinates
-        if (mouseX < modalX || mouseX > modalX + modalW || mouseY < modalY || mouseY > modalY + modalH) {
-            showRules = false;
+        // Check if Blackjack icon is pressed
+        if (mouseX >= blackjackBtnX && mouseX <= blackjackBtnX + boxW && mouseY >= btnY && mouseY <= btnY + boxH) {
+            gameMode = 1;
+            bettingInput = "";
+            enteringBet = true;
+        }
+        // Check if Dice game icon is pressed
+        else if (mouseX >= diceBtnX && mouseX <= diceBtnX + boxW && mouseY >= btnY && mouseY <= btnY + boxH) {
+            gameMode = 2;
+            bettingInput = "";
+            enteringBet = true;
         }
     } 
-    // Handle click logic when the modal is closed (clicking the info icon)
+    // 2. Click Management inside Live Game Rooms
     else {
-        if (mouseX >= iconX && mouseX <= iconX + iconSize && mouseY >= iconY && mouseY <= iconY + iconSize) {
-            scrollY = 0; // Reset scroll view location back to the very top header level
-            showRules = true;
+        if (showRules) {
+            float modalW = 520;
+            float modalH = 340;
+            float modalX = (width - modalW) / 2;
+            float modalY = (height - modalH) / 2;
+
+            if (mouseX < modalX || mouseX > modalX + modalW || mouseY < modalY || mouseY > modalY + modalH) {
+                showRules = false;
+            }
+        } 
+        else {
+            // Check if info icon is clicked
+            if (mouseX >= iconX && mouseX <= iconX + iconSize && mouseY >= iconY && mouseY <= iconY + iconSize) {
+                scrollY = 0; 
+                showRules = true;
+            }
+            // Check if exit icon is clicked (Restricted to when a round isn't actively running)
+            else if (mouseX >= exitX && mouseX <= exitX + exitW && mouseY >= exitY && mouseY <= exitY + exitH) {
+                if ((gameMode == 1 && blackjack.isRoundOver()) || (gameMode == 2 && diceGame.isRoundOver())) {
+                    gameMode = 0; // Routes back to the selection hub screen
+                }
+            }
         }
     }
   }
 
-  /**
-   * Screen 1: Original Blackjack Layout
-   */
   private void drawOriginalBlackjackScreen() {
     textSize(24);
     fill(255);
     text("Bankroll Balance: $" + blackjack.getBalance(), 50, 80);
     text("Status: " + blackjack.getGameMessage(), 50, 120);
     
-    // Draw Deck Stack
     int deckX = 650;
     int deckY = 80;
     if (backOfCardImage != null) {
@@ -314,7 +393,6 @@ public class Game extends PApplet {
         rect(deckX, deckY, 90, 130, 5);
     }
 
-    // Phase 1: Betting Mode
     if (enteringBet) {
         fill(255, 255, 150);
         textSize(24);
@@ -324,9 +402,7 @@ public class Game extends PApplet {
         text("Type digits [0-9], BACKSPACE to edit, ENTER to confirm deal.", 50, 220);
     }
     
-    // Phase 2: Active Hands Table Environment
     if (!blackjack.getPlayer().getHand().getCards().isEmpty()) {
-        // Dealer Region
         fill(255);
         textSize(18);
         if (blackjack.isRoundOver()) {
@@ -336,13 +412,11 @@ public class Game extends PApplet {
         }
         drawHandVisuals(blackjack.getDealerHand(), 50, 270, true);
         
-        // Player Region
         fill(255);
         textSize(18);
         text("Your Hand (Total: " + blackjack.getPlayer().getHand().getValue() + ")", 50, 420);
         drawHandVisuals(blackjack.getPlayer().getHand(), 50, 440, false);
         
-        // Bet & Outcome Status displays
         textSize(24);
         textAlign(CENTER);
         if (!blackjack.isRoundOver()) {
@@ -371,9 +445,6 @@ public class Game extends PApplet {
     }
   }
 
-  /**
-   * Screen 2: High or Low Dice Layout
-   */
   private void drawDiceScreen() {
     cupX = lerp(cupX, targetCupX, 0.1f);
     cupY = lerp(cupY, targetCupY, 0.1f);
@@ -466,12 +537,10 @@ public class Game extends PApplet {
 
   @Override
   public void keyPressed() {
-    // Ignore gameplay hotkeys if rules window overlay modal is open
     if (showRules) {
         return;
     }
 
-    // Global Profile Hard Reboot
     if (key == 'r' || key == 'R') {
         sharedAccount = new BankAccount(1000);
         blackjack = new Blackjack(sharedAccount);
@@ -481,21 +550,6 @@ public class Game extends PApplet {
         return;
     }
 
-    // Dynamic Navigation Keys (Only switch table views when a round isn't active)
-    if ((key == 'b' || key == 'B') && (blackjack.isRoundOver() && diceGame.isRoundOver())) {
-        gameMode = 1;
-        bettingInput = "";
-        enteringBet = true;
-        return;
-    }
-    if ((key == 'd' || key == 'D') && (blackjack.isRoundOver() && diceGame.isRoundOver())) {
-        gameMode = 2;
-        bettingInput = "";
-        enteringBet = true;
-        return;
-    }
-
-    // Route inputs down to sub-methods based on active room
     if (gameMode == 1) {
         handleBlackjackInput();
     } else if (gameMode == 2) {
