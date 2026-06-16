@@ -31,7 +31,7 @@ public class Game extends PApplet {
   float iconSize = 30;
 
   // Exit button positions
-  float exitX = 20;
+  float exitX = 740;
   float exitY = 530;
   float exitW = 50;
   float exitH = 50;
@@ -74,7 +74,7 @@ public class Game extends PApplet {
     
     cardImages = new HashMap<String, PImage>();
     backOfCardImage = loadImage("images/cardBack.png"); 
-    mainMenuBackgroundImage = loadImage("images/nesBackwout.png");
+    mainMenuBackgroundImage = loadImage("images/nes.jpg");
 
     String[] suits = {"Hearts", "Diamonds", "Clubs", "Spades"};
     String[] ranks = {"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"};
@@ -151,12 +151,12 @@ public class Game extends PApplet {
       background(20, 110, 50); // Fallback green background if image fails to load
   }
     textAlign(CENTER, CENTER);
-    fill(255);
+    fill(215);
     textSize(36);
-    text("BACK-ALLEY CASINO", width / 2, 80);
+    text("BACK-ALLEY CASINO", width / 2, 270);
     textSize(16);
     fill(200);
-    text("Click on an icon to play", width / 2, 130);
+    text("Click on an icon to play", width / 2, 320);
 
     // Dynamic placement positions for selection buttons
     float boxW = 160;
