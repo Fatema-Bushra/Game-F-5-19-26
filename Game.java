@@ -231,7 +231,7 @@ public class Game extends PApplet {
     if (gameMode == 1) {
         text("Blackjack Instructions", width - 80, 28);
     } else if (gameMode == 2) {
-        text("High-or-Low Instructions", width - 100, 28);
+        text("High-or-Low Instructions", width - 80, 28);
     }
     textAlign(LEFT);
   }
