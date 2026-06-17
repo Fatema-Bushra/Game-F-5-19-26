@@ -177,16 +177,16 @@ public class Game extends PApplet {
     textAlign(CENTER, CENTER);
     fill(255);
     textSize(36);
-    text("BACK-ALLEY CASINO", width / 2, 80);
+    text("BACK-ALLEY CASINO", width / 2, 250);
     
     // DISPLAY HIGHEST BALANCE METRIC
     fill(255, 215, 0);
     textSize(18);
-    text("Highest Balance: $" + highestBalance, width / 2, 130);
+    text("Highest Balance: $" + highestBalance, width / 2, 280);
     
     textSize(14);
     fill(200);
-    text("Click on an icon to play", width / 2, 165);
+    text("Click on an icon to play", width / 2, 300);
 
     // Dynamic placement positions for selection buttons
     float boxW = 160;
@@ -204,7 +204,7 @@ public class Game extends PApplet {
     }
     fill(255);
     textSize(18);
-    text("Blackjack", blackjackBtnX + boxW / 2, btnY + boxH + 25);
+    text("BLACKJACK", blackjackBtnX - 20 + boxW / 2, btnY + boxH + 25);
 
     // Dice Selection Option
     if (diceIconImage != null) {
@@ -214,7 +214,7 @@ public class Game extends PApplet {
         rect(diceBtnX, btnY, boxW, boxH, 10);
     }
     fill(255);
-    text("High-or-Low", diceBtnX + boxW / 2, btnY + boxH + 25);
+    text("HIGH-OR-LOW", diceBtnX + boxW / 2, btnY + boxH + 25);
     
     textAlign(LEFT, BASELINE);
   }
@@ -410,7 +410,7 @@ public class Game extends PApplet {
   private void drawOriginalBlackjackScreen() {
     textSize(24);
     fill(255);
-    text("Bankroll Balance: $" + blackjack.getBalance(), 50, 80);
+    text("Checking Balance: $" + blackjack.getBalance(), 50, 80);
     text("Status: " + blackjack.getGameMessage(), 50, 120);
     
     int deckX = 650;
@@ -427,7 +427,7 @@ public class Game extends PApplet {
     if (enteringBet) {
         fill(255, 255, 150);
         textSize(24);
-        text("Type your blackjack bet: $" + bettingInput + "_", 50, 180);
+        text("Type your bet: $" + bettingInput + "_", 50, 160);
         textSize(14);
         fill(200);
         text("Type digits [0-9], BACKSPACE to edit, ENTER to confirm deal.", 50, 220);
@@ -460,17 +460,17 @@ public class Game extends PApplet {
             String outcomeMsg = blackjack.getGameMessage();
             if (outcomeMsg.contains("You win") || outcomeMsg.contains("win!")) {
                 fill(50, 255, 50);
-                text("Amount Won: +$" + blackjack.getCurrentBet(), width - 150, height - 80);
+                text("Amount Won: +$" + blackjack.getCurrentBet(), width - 150, height - 320);
             } else if (outcomeMsg.contains("Tie") || outcomeMsg.contains("Push")) {
                 fill(200);
-                text("Push: No Change", width - 150, height - 80);
+                text("Push: No Change", width - 150, height - 320);
             } else {
                 fill(255, 50, 50);
-                text("Amount Lost: -$" + blackjack.getCurrentBet(), width - 150, height - 80);
+                text("Amount Lost: -$" + blackjack.getCurrentBet(), width - 150, height - 320);
             }
             fill(255);
             textSize(14);
-            text("Press ENTER to play again", width - 150, height - 40);
+            text("Press ENTER to play again", width - 150, height - 300);
         }
         textAlign(LEFT);
     }
@@ -480,22 +480,27 @@ public class Game extends PApplet {
     cupX = lerp(cupX, targetCupX, 0.1f);
     cupY = lerp(cupY, targetCupY, 0.1f);
 
+    
     textSize(24);
     fill(255);
-    text("Dice Room Target Value: " + diceGame.getTargetValue(), 50, 80);
+    text("Checking Balance: $" + diceGame.getBalance(), 50, 80);
+    text("Status: " + diceGame.getGameMessage(), 50, 110);
+    textSize(24);
+    fill(255);
+    text("Comparison Value: " + diceGame.getTargetValue(), 50, 140);
 
     if (enteringBet) {
         fill(255, 255, 150);
-        text("Type your High-Low bet: $" + bettingInput + "_", 50, 150);
+        text("Type your bet: $" + bettingInput + "_", 50, 170);
         targetCupX = width / 2f;
         targetCupY = height / 2f;
     } 
     else if (!enteringBet && !diceGame.isRoundOver()) {
         fill(255, 255, 150);
-        text("Will dice roll HIGHER or LOWER than " + diceGame.getTargetValue() + "?", 50, 140);
+        text("Will dice roll HIGHER or LOWER than " + diceGame.getTargetValue() + "?", 50, 170);
         textSize(16);
         fill(255);
-        text("Press 'H' for HIGHER  |  Press 'L' for LOWER", 50, 180);
+        text("Press 'H' for HIGHER  |  Press 'L' for LOWER", 50, 190);
         fill(255, 215, 0);
         text("Current Bet Locked: $" + diceGame.getCurrentBet(), 50, 210);
         
@@ -508,10 +513,10 @@ public class Game extends PApplet {
         else if (msg.contains("Returned") || msg.contains("Push")) fill(200);
         else fill(255, 50, 50);
         
-        text(msg, 50, 140);
+        text(msg, 50, 170);
         textSize(16);
         fill(255);
-        text("Press ENTER to change target benchmark and continue.", 50, 180);
+        text("Press ENTER to continue.", 50, 190);
     }
 
     if (!enteringBet) {
