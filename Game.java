@@ -568,7 +568,7 @@ public class Game extends PApplet {
     text("BANKRUPT!", 50, 140);
     textSize(18);
     fill(255);
-    text("Press 'R' to completely wipe profiles and claim a fresh $1000 credit line.", 50, 180);
+    text("Press 'R' to  claim a fresh $1000.", 50, 180);
   }
 
   @Override
